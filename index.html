@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a1a3f">
+<title>Materiale PdRugby</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div>
+    <div class="eyebrow">PADOVA RUGBY</div>
+    <h1>Materiale PdRugby</h1>
+  </div>
+  <div class="badge">V0.1</div>
+</header>
+
+<main>
+  <section class="hero">
+    <div>
+      <h2>Inventario squadra</h2>
+      <p>Cerca materiale, contenitori, ruote e giocatori. I dati sono quelli forniti nell'inventario iniziale.</p>
+    </div>
+    <input id="search" type="search" placeholder="🔎  Cerca materiale, borsa, ruota, persona..." autocomplete="off">
+  </section>
+
+  <nav class="tabs">
+    <button class="tab active" data-view="dashboard">Panoramica</button>
+    <button class="tab" data-view="inventory">Inventario</button>
+    <button class="tab" data-view="bags">Contenitori</button>
+    <button class="tab" data-view="wheels">Ruote</button>
+    <button class="tab" data-view="map">Mappa</button>
+  </nav>
+
+  <section id="content"></section>
+</main>
+
+<footer>
+  <span>Materiale PdRugby · V0.1</span>
+  <span>Dati iniziali da inventario fornito</span>
+</footer>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
