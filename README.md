@@ -1,22 +1,23 @@
-# MaterialePdRugby V0.2
+# MaterialePdRugby V0.3
 
-Versione grafica responsive dell'Equipment Manager PdRugby.
+Versione grafica dell'inventario PdRugby, in sola lettura.
 
-## Novità
-- Dashboard in stile sportivo/tecnico.
-- Layout desktop con sidebar e layout mobile/adaptive.
-- Schede giocatore con carrozzina, specifiche ruote, accessori, componenti condivisi, borsa e note.
-- Placeholder per le fotografie, predisposti in `data.js`.
-- Inventario, borse, ruote, mappa e check-list.
-- Configurazioni ruote condivise calcolate automaticamente da diametro + copertoncino.
+## Novità V0.3
+- nuova veste grafica sportiva responsive;
+- schede giocatore con avatar e foto carrozzina;
+- riferimenti reali a file JPG/PNG/WebP, senza placeholder Unicode;
+- due immagini generiche carrozzina: `attacco.jpg` e `difesa.jpg`;
+- immagini predisposte per borse e ruote;
+- nuovo campo `corrimano`, con valori previsti come `Gommato`, `Alluminio` o `Da completare`;
+- badge generale SOLA LETTURA;
+- compatibilità automatica tra giocatori con stesso diametro + coperture;
+- layout adattivo per desktop, tablet e smartphone/iPhone.
 
-## Foto
-Inserire le immagini, ad esempio, in:
-`images/giocatori/` e `images/carrozine/`.
-Poi impostare in `data.js` il campo `photo`, ad esempio:
-`photo: "images/giocatori/nicolo.jpg"`.
+## Immagini
+Caricare i file nella cartella `images/` seguendo `images/README.txt`.
+I percorsi sono già presenti in `data.js`.
 
-Formato consigliato: JPG/WEBP; giocatore 1200x1200 px; carrozzina 1600x1200 px; borsa 1200x900 px.
+Per cambiare un nome file non serve modificare l'interfaccia: basta aggiornare il relativo percorso in `data.js`.
 
-## Uso
-Aprire `index.html` in un browser oppure pubblicare il contenuto del repository con GitHub Pages.
+## Nota dati
+I valori non forniti dall'inventario (per esempio accessori personali e corrimano) restano `Da completare`; non sono state fatte assunzioni.
