@@ -1,29 +1,13 @@
 /*
- * DATI PdRugby — V0.3
+ * DATI PdRugby — V0.4 (Aggiornato)
  *
- * IMMAGINI: i percorsi sono già predisposti. Basta caricare i file nelle cartelle.
- *
- * Struttura consigliata:
+ * Struttura consigliata per le immagini:
  * images/
  * ├── logo/logo_PDR.png
- * ├── giocatori/nicolo.jpg
- * ├── giocatori/nando.jpg
- * ├── giocatori/sante.jpg
- * ├── giocatori/paolino.jpg
- * ├── giocatori/hassan.jpg
- * ├── carrozzine/attacco.jpg
- * ├── carrozzine/difesa.jpg
- * ├── borse/sacca-blu-materiale.jpg
- * ├── borse/sacca-nera.jpg
- * ├── borse/sacca-grigia.jpg
- * └── ruote/...
- *
- * TECNICA IMMAGINI:
- * - avatar giocatore: JPG/PNG/WebP, quadrato, consigliato 800x800 px
- * - carrozzina: JPG/PNG/WebP, 4:3, consigliato 1600x1200 px
- * - borsa: JPG/PNG/WebP, 4:3, consigliato 1200x900 px
- * - ruota: JPG/PNG/WebP, quadrata, consigliato 800x800 px
- * - logo: PNG trasparente o SVG
+ * ├── giocatori/ (nicolo.jpg, nando.jpg, sante.jpg, paolino.jpg, hassan.jpg, ahmed.jpg, nicolas.jpg, rambo.jpg, luca.jpg, emina.jpg, massimo.jpg, rosa.jpg, francesco.jpg, amine.jpg, matteo.jpg)
+ * ├── carrozzine/ (attacco.jpg, difesa.jpg)
+ * ├── borse/ (sacca_blu_materiale.jpg, sacca_nera.jpg, sacca_grigia.jpg)
+ * └── ruote/
  */
 const IMG = {
   logo: "images/logo/logo_PDR.png",
@@ -37,7 +21,12 @@ const IMG = {
     nicolas: "images/giocatori/nicolas.jpg",
     rambo: "images/giocatori/rambo.jpg",
     luca: "images/giocatori/luca.jpg",
-    emina: "images/giocatori/emina.jpg"
+    emina: "images/giocatori/emina.jpg",
+    massimo: "images/giocatori/massimo.jpg",
+    rosa: "images/giocatori/rosa.jpg",
+    francesco: "images/giocatori/francesco.jpg",
+    amine: "images/giocatori/amine.jpg",
+    matteo: "images/giocatori/matteo.jpg"
   },
   chairs: {
     attack: "images/carrozzine/attacco.jpg",
@@ -64,7 +53,7 @@ const DATA = {
     {id:"P005",number:5,name:"Nicolas Battistella",role:"Difesa",avatar:IMG.players.nicolas,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'24"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["1× Ruota (?)"]},notes:"Quantità ruote da verificare."},
     {id:"P006",number:6,name:"Nicolò Toscano",role:"Attacco",avatar:IMG.players.nicolo,wheelchair:{model:"Da completare",photo:IMG.chairs.attack},wheels:{diameter:'25"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote","Sacchetto Mercedes","Pece"]},notes:""},
     {id:"P007",number:7,name:"Paolo Roberto Sacerdoti",role:"Difesa",avatar:IMG.players.paolino,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'25"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote","Sacchetto Mercedes","Pece"]},notes:""},
-    {id:"P007",number:8,name:"Massimo Girardello",role:"Difesa",avatar:IMG.players.massimo,wheelchair:{model:"Da completare",photo:IMG.chairs.attack},wheels:{diameter:'25"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote","Sacchetto Mercedes","Pece"]},notes:""},
+    {id:"P008",number:8,name:"Massimo Girardello",role:"Difesa",avatar:IMG.players.massimo,wheelchair:{model:"Da completare",photo:IMG.chairs.attack},wheels:{diameter:'25"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote","Sacchetto Mercedes","Pece"]},notes:""},
     {id:"P010",number:10,name:"Hassan",role:"Difesa",avatar:IMG.players.hassan,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'25"',cover:"Raggi grigie (Kenda)",spoke:"Lungo",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""},
     {id:"P011",number:11,name:'Stefano "Rambo" Franchin',role:"Difesa",avatar:IMG.players.rambo,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'25"',cover:"Raggi grigie (Kenda)",spoke:"Lungo",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""},
     {id:"P012",number:12,name:"Luca Brugnolaro",role:"Difesa",avatar:IMG.players.luca,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'25"',cover:"Raggi grigie (Kenda)",spoke:"Lungo",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""},

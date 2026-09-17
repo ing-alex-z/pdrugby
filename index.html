@@ -13,6 +13,23 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<!-- OVERLAY LOGIN TEMPORANEO -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-card">
+    <div class="brand-mark" style="justify-content: center; margin-bottom: 15px;">
+      <span>PD</span><b>RUGBY</b>
+    </div>
+    <h2>Accesso Riservato</h2>
+    <p>Inserisci la password per consultare il materiale della squadra.</p>
+    <form id="loginForm">
+      <input type="password" id="passwordInput" placeholder="Password di accesso" required autocomplete="current-password">
+      <button type="submit">Accedi</button>
+      <div id="loginError" class="login-error hidden">Password errata. Riprova.</div>
+    </form>
+  </div>
+</div>
+
 <div class="app-shell">
 <aside class="sidebar">
   <div class="brand"><div class="brand-mark"><span>PD</span><b>RUGBY</b></div><div class="brand-tag">EQUIPMENT MANAGER</div></div>
@@ -29,10 +46,25 @@
   <div class="sidebar-promo"><div class="promo-wheel">◉</div><strong>Più forti<br><em>insieme.</em></strong></div>
 </aside>
 <div class="main">
-  <header class="topbar"><button id="mobileMenu" class="mobile-menu" aria-label="Apri menu">☰</button><div class="search-wrap"><span>⌕</span><input id="search" type="search" placeholder="Cerca giocatore, materiale, borsa, ruota..." autocomplete="off"><kbd>CTRL K</kbd></div><div class="top-actions"><div class="readonly top-readonly">SOLA LETTURA</div><div class="user-chip"><div class="user-avatar">PD</div><div><b>PdRugby</b><small>Team Manager</small></div></div></div></header>
+  <header class="topbar">
+    <button id="mobileMenu" class="mobile-menu" aria-label="Apri menu">☰</button>
+    <div class="search-wrap">
+      <span>⌕</span>
+      <input id="search" type="search" placeholder="Cerca giocatore, materiale, borsa, ruota..." autocomplete="off">
+      <kbd>CTRL K</kbd>
+    </div>
+    <div class="top-actions">
+      <div class="readonly top-readonly">SOLA LETTURA</div>
+      <div class="user-chip">
+        <div class="user-avatar">PD</div>
+        <div><b>PdRugby</b><small>Team Manager</small></div>
+      </div>
+    </div>
+  </header>
   <main class="page" id="content"></main>
 </div>
 </div>
-<script src="data.js"></script><script src="app.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
