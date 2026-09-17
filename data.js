@@ -5,7 +5,7 @@
  *
  * Struttura consigliata:
  * images/
- * ├── logo/pd-rugby.png
+ * ├── logo/logo_PDR.png
  * ├── giocatori/nicolo.jpg
  * ├── giocatori/nando.jpg
  * ├── giocatori/sante.jpg
@@ -26,7 +26,7 @@
  * - logo: PNG trasparente o SVG
  */
 const IMG = {
-  logo: "images/logo/pd-rugby.png",
+  logo: "images/logo/logo_PDR.png",
   players: {
     nicolo: "images/giocatori/nicolo.jpg",
     nando: "images/giocatori/nando.jpg",
@@ -39,25 +39,32 @@ const IMG = {
     defense: "images/carrozzine/difesa.jpg"
   },
   bags: {
-    blue: "images/borse/sacca-blu-materiale.jpg",
-    black: "images/borse/sacca-nera.jpg",
-    grey: "images/borse/sacca-grigia.jpg"
+    blue: "images/borse/sacca_blu_materiale.jpg",
+    black: "images/borse/sacca_nera.jpg",
+    grey: "images/borse/sacca_grigia.jpg"
   },
   wheels: {
-    red25: "images/ruote/25-raggi-rosse-irc.jpg",
-    red24: "images/ruote/24-raggi-rosse-irc.jpg",
+    red25: "images/ruote/25_attacco_rosse.jpg",
+    red24: "images/ruote/24_attacco_rosse.jpg",
     tubular24: "images/ruote/24-tubolari.jpg",
-    grey25: "images/ruote/25-raggi-grigie-kenda.jpg"
+    grey25: "images/ruote/25_difesa_grigie.jpg"
   }
 };
 
 const DATA = {
   players: [
+    {id:"P001",number:1,name:"Fernando Gabriel Zurlo",role:"Attacco",avatar:IMG.players.nando,wheelchair:{model:"Da completare",photo:IMG.chairs.attack},wheels:{diameter:'25"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""},
+    {id:"P002",number:2,name:"Ahmed Raourahi",role:"Attacco",avatar:IMG.players.ahmed,wheelchair:{model:"Da completare",photo:IMG.chairs.attack},wheels:{diameter:'25"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""},
+    {id:"P003",number:3,name:"Sante Pinton",role:"Difesa",avatar:IMG.players.sante,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'24"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["1× Ruota (?)"]},notes:"Quantità ruote da verificare."},
+    {id:"P005",number:5,name:"Nicolas Battistella",role:"Difesa",avatar:IMG.players.nicolas,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'24"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["1× Ruota (?)"]},notes:"Quantità ruote da verificare."},
     {id:"P006",number:6,name:"Nicolò",role:"Attacco",avatar:IMG.players.nicolo,wheelchair:{model:"Da completare",photo:IMG.chairs.attack},wheels:{diameter:'25"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote","Sacchetto Mercedes","Pece"]},notes:""},
-    {id:"P001",number:1,name:"Nando",role:"Attacco",avatar:IMG.players.nando,wheelchair:{model:"Da completare",photo:IMG.chairs.attack},wheels:{diameter:'25"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""},
-    {id:"P003",number:3,name:"Sante",role:"Difesa",avatar:IMG.players.sante,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'24"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["1× Ruota (?)"]},notes:"Quantità ruote da verificare."},
+    {id:"P007",number:6,name:"Paolo Roberto Sacerdoti",role:"Difesa",avatar:IMG.players.paolino,wheelchair:{model:"Da completare",photo:IMG.chairs.attack},wheels:{diameter:'25"',cover:"Raggi rosse (IRC)",spoke:"Corto",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote","Sacchetto Mercedes","Pece"]},notes:""},
     {id:"P008",number:8,name:"Paolino",role:"Difesa",avatar:IMG.players.paolino,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'24"',cover:"Tubolari",spoke:"Lungo",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""},
+
     {id:"P010",number:10,name:"Hassan",role:"Difesa",avatar:IMG.players.hassan,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'25"',cover:"Raggi grigie (Kenda)",spoke:"Lungo",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""}
+    {id:"P011",number:10,name:"Stefano "Rambo" Franchin",role:"Difesa",avatar:IMG.players.rambo,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'25"',cover:"Raggi grigie (Kenda)",spoke:"Lungo",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""}
+    {id:"P012",number:10,name:"Luca Brugnolaro",role:"Difesa",avatar:IMG.players.luca,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'25"',cover:"Raggi grigie (Kenda)",spoke:"Lungo",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""}
+    {id:"P013",number:10,name:"Emina Coric",role:"Difesa",avatar:IMG.players.emina,wheelchair:{model:"Da completare",photo:IMG.chairs.defense},wheels:{diameter:'25"',cover:"Raggi grigie (Kenda)",spoke:"Lungo",handrim:"Da completare"},accessories:[],bag:{color:"Nera",photo:IMG.bags.black,contents:["2× Ruote"]},notes:""}
   ],
   containers:[
     {id:"C001",name:"Sacca blu materiale",type:"Sacca",parent:null,photo:IMG.bags.blue},
