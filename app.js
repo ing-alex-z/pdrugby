@@ -1,74 +1,24 @@
 let currentView="dashboard", query="";
-const $=s=>document.querySelector(s);
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function cname(id){return DATA.containers.find(x=>x.id===id)?.name||id}
-function mat(id){return DATA.materials.find(x=>x.id===id)}
+const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const icon=type=>type==="Sacca"?"▣":type==="Cesta"?"▱":type==="Cassetta"?"▣":"▤";
+function mat(id){return DATA.materials.find(x=>x.id===id)} function cname(id){return DATA.containers.find(x=>x.id===id)?.name||id}
 function totalStock(id){return DATA.stock.filter(x=>x.material===id).reduce((a,b)=>a+b.qty,0)}
-function render(){
-  const q=query.trim().toLowerCase();
-  let html="";
-  if(currentView==="dashboard") html=dashboard(q);
-  if(currentView==="inventory") html=inventory(q);
-  if(currentView==="bags") html=bags(q);
-  if(currentView==="wheels") html=wheels(q);
-  if(currentView==="map") html=map(q);
-  $("#content").innerHTML=html||'<div class="card empty">Nessun risultato.</div>';
-  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.view===currentView));
-}
-function dashboard(q){
-  const materialTotal=DATA.stock.reduce((a,b)=>a+b.qty,0);
-  const searchResults=search(q);
-  return `<div class="grid">
-    <div class="card"><div class="muted">Contenitori</div><div class="stat">${DATA.containers.length}</div></div>
-    <div class="card"><div class="muted">Tipi di materiale</div><div class="stat">${DATA.materials.length}</div></div>
-    <div class="card"><div class="muted">Pezzi in giacenza</div><div class="stat">${materialTotal}</div></div>
-    <div class="card"><div class="muted">Ruote censite</div><div class="stat">${DATA.wheels.length}</div></div>
-  </div>
-  ${q?`<div class="card"><h3 class="section-title">Risultati per “${esc(q)}”</h3>${searchResults}</div>`:""}
-  <div class="card"><h3 class="section-title">Situazione rapida</h3>
-    <div class="grid">
-      <div><span class="pill ok">OK</span><strong> Inventario iniziale caricato</strong><p class="muted">Le quantità sono separate per contenitore.</p></div>
-      <div><span class="pill warn">ATTENZIONE</span><strong> Dati da verificare</strong><p class="muted">Le ruote del magazzino sono state interpretate come singoli esemplari.</p></div>
-    </div>
-  </div>`;
-}
-function search(q){
-  if(!q) return "";
-  const rows=[];
-  DATA.materials.forEach(m=>{
-    const text=[m.name,m.category,m.size,m.variant].join(" ").toLowerCase();
-    if(text.includes(q)){
-      const loc=DATA.stock.filter(s=>s.material===m.id).map(s=>`${esc(cname(s.container))} ×${s.qty}`).join(" · ");
-      rows.push(`<div class="card search-result"><strong>${esc(m.name)} ${esc(m.size)} ${esc(m.variant)}</strong><div class="muted">${esc(m.category)}</div><div>${loc||"Nessuna giacenza registrata"}</div><b>Totale: ${totalStock(m.id)}</b></div>`);
-    }
-  });
-  DATA.containers.filter(c=>c.name.toLowerCase().includes(q)).forEach(c=>rows.push(`<div class="card search-result"><strong>👜 ${esc(c.name)}</strong><div class="muted">${esc(c.type)}</div></div>`));
-  DATA.wheels.filter(w=>[w.size,w.assignment,w.note].join(" ").toLowerCase().includes(q)).forEach(w=>rows.push(`<div class="card search-result"><div class="wheel"><div class="wheel-icon">🛞</div><div><strong>${esc(w.id)} · ${esc(w.size)}</strong><div>${esc(w.assignment||"Non assegnata")}</div><div class="muted">${esc(w.note)}</div></div></div></div>`));
-  DATA.personalBags.filter(p=>[p.color,p.person].join(" ").toLowerCase().includes(q)).forEach(p=>rows.push(`<div class="card search-result"><strong>👜 Sacca ${esc(p.color)}</strong><div>Persona: <span class="person">${esc(p.person)}</span></div></div>`));
-  return rows.join("")||'<div class="empty">Nessun risultato.</div>';
-}
-function inventory(q){
-  let ms=DATA.materials.filter(m=>!q||[m.name,m.category,m.size,m.variant].join(" ").toLowerCase().includes(q));
-  return `<div class="card"><h3 class="section-title">Inventario aggregato</h3><div class="table-wrap"><table class="table"><thead><tr><th>Materiale</th><th>Categoria</th><th>Variante</th><th>Totale</th><th>Posizioni</th></tr></thead><tbody>
-  ${ms.map(m=>`<tr><td><strong>${esc(m.name)}</strong> ${esc(m.size)}</td><td>${esc(m.category)}</td><td>${esc(m.variant)}</td><td class="qty">${totalStock(m.id)}</td><td>${DATA.stock.filter(s=>s.material===m.id).map(s=>`${esc(cname(s.container))} ×${s.qty}`).join("<br>")||"—"}</td></tr>`).join("")}</tbody></table></div></div>`;
-}
-function bags(q){
-  const cs=DATA.containers.filter(c=>!q||c.name.toLowerCase().includes(q));
-  return `<div class="grid">${cs.map(c=>`<div class="card"><h3>${c.type==="Sacca"?"👜":c.type==="Cesta"?"🧺":c.type==="Cassetta"?"🧰":"🏬"} ${esc(c.name)}</h3><div class="muted">${esc(c.type)}</div>
-  ${DATA.stock.filter(s=>s.container===c.id).map(s=>{let m=mat(s.material);return `<div class="node"><strong>${esc(m.name)} ${esc(m.size)}</strong><span class="pill">${esc(m.variant||"")}</span><span class="pill">${s.qty} pezzi</span></div>`}).join("")||'<p class="muted">Nessun materiale quantitativo registrato.</p>'}</div>`).join("")}</div>
-  <div class="card"><h3 class="section-title">Sacche ruote personali</h3><div class="grid">${DATA.personalBags.map(p=>`<div class="node">👜 <strong>Sacca ${esc(p.color)}</strong>${esc(p.person)}</div>`).join("")}</div></div>`;
-}
-function wheels(q){
-  let ws=DATA.wheels.filter(w=>!q||[w.id,w.size,w.assignment,w.note].join(" ").toLowerCase().includes(q));
-  return `<div class="card"><h3 class="section-title">Ruote censite: ${ws.length}</h3><div class="table-wrap"><table class="table"><thead><tr><th>ID</th><th>Misura</th><th>Assegnazione</th><th>Note</th></tr></thead><tbody>${ws.map(w=>`<tr><td><strong>${esc(w.id)}</strong></td><td>${esc(w.size)}</td><td>${esc(w.assignment||"—")}</td><td>${esc(w.note||"—")}</td></tr>`).join("")}</tbody></table></div></div>`;
-}
-function map(q){
-  return `<div class="card"><h3 class="section-title">Mappa dei contenitori</h3><div class="tree">
-    ${DATA.containers.filter(c=>c.type!=="Locale").map(c=>`<div class="node"><strong>${c.type==="Sacca"?"👜":c.type==="Cesta"?"🧺":"🧰"} ${esc(c.name)}</strong><div class="children">${DATA.stock.filter(s=>s.container===c.id).map(s=>{let m=mat(s.material);return `<span class="child">${esc(m.name)} ${esc(m.size)} ×${s.qty}</span>`}).join("")}</div></div>`).join("")}
-    <div class="node"><strong>🏬 Magazzino</strong><div class="children">${DATA.wheels.map(w=>`<span class="child">🛞 ${esc(w.size)} ${esc(w.assignment||"")}</span>`).join("")}<span class="child">Copertoncini: rosso 24" ×2</span><span class="child">Copertoncini: rosso 25" ×2</span><span class="child">Copertoncini: grigio 25" ×1</span></div></div>
-    <div class="node"><strong>🛞 Sacche ruote</strong><div class="children">${DATA.personalBags.map(p=>`<span class="child">${esc(p.color)} · ${esc(p.person)}</span>`).join("")}</div></div>
-  </div></div>`;
-}
-document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{currentView=b.dataset.view;render()}));
-$("#search").addEventListener("input",e=>{query=e.target.value;render()});
-render();
+function wheelConfig(p){return `${p.wheels.diameter}|${p.wheels.cover}`}
+function sharedPlayers(p){return DATA.players.filter(x=>x.id!==p.id&&wheelConfig(x)===wheelConfig(p))}
+function playerPortrait(p,detail=false){return p.wheelchair.photo?`<img src="${esc(p.wheelchair.photo)}" alt="${esc(p.name)}">`:(detail?"♿":"♟")}
+function nav(view){currentView=view;query="";$('#search').value="";render();document.body.classList.remove('mobile-nav-open')}
+function pageHead(kicker,title,desc,button=''){return `<div class="page-head"><div><div class="eyebrow">${kicker}</div><h1>${title}</h1><p>${desc}</p></div>${button?`<button class="primary">＋ ${button}</button>`:''}</div>`}
+function render(){let html='';if(currentView==='dashboard')html=dashboard();if(currentView==='players')html=players();if(currentView==='wheelchairs')html=wheelchairs();if(currentView==='wheels')html=wheels();if(currentView==='bags')html=bags();if(currentView==='inventory')html=inventory();if(currentView==='map')html=map();if(currentView==='checklist')html=checklist();$('#content').innerHTML=html;document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.view===currentView));bindCards()}
+function dashboard(){return pageHead('PD RUGBY · EQUIPMENT MANAGER','Dashboard','Gestione di giocatori, carrozzine, ruote, borse e materiale della squadra.','Aggiungi giocatore')+`<div class="stats"><div class="stat-card"><span class="stat-icon">●●</span><small>GIOCATORI</small><div class="stat-value">${DATA.players.length}</div></div><div class="stat-card"><span class="stat-icon">♿</span><small>CARROZZINE</small><div class="stat-value">${DATA.players.length}</div></div><div class="stat-card"><span class="stat-icon">◉</span><small>RUOTE CENSITE</small><div class="stat-value">${DATA.wheels.length}</div></div><div class="stat-card"><span class="stat-icon">▣</span><small>CONTENITORI</small><div class="stat-value">${DATA.containers.length}</div></div></div><div class="section"><h2 class="section-title">Giocatori <span>${DATA.players.length} attivi</span></h2><div class="player-grid">${DATA.players.map(playerCard).join('')}</div></div><div class="bottom-strip"><div class="bottom-title">Configurazioni ruote<br>condivise</div>${sharedConfigs()}</div>`}
+function playerCard(p){return `<article class="player-card" data-player="${p.id}"><div class="player-top"><div class="portrait">${playerPortrait(p)}</div><div><span class="player-id">#${p.number}</span><div class="player-name">${esc(p.name)}</div><span class="role ${p.role==='Difesa'?'defense':''}">${esc(p.role.toUpperCase())}</span></div><span class="active-dot">● Attivo</span></div><div class="mini-block"><div class="mini-title">♿ CARROZZINA</div><div class="chair-placeholder">${p.wheelchair.photo?`<img src="${esc(p.wheelchair.photo)}" alt="Carrozzina ${esc(p.name)}">`:'♿'}</div><div class="specs" style="margin-top:8px"><div><span>Diametro ruote</span><b>${esc(p.wheels.diameter)}</b></div><div><span>Copertoncino</span><b>${esc(p.wheels.cover)}</b></div><div><span>Spillo</span><b>${esc(p.wheels.spoke)}</b></div></div></div><div class="mini-block"><div class="mini-title">◉ RUOTE</div><div class="wheel-mini"><span>${esc(p.wheels.diameter)} ${esc(p.wheels.cover)}</span><span class="wheel-symbol">◉</span></div></div><div class="mini-block"><div class="mini-title">⚒ ACCESSORI</div><ul class="access-list">${(p.accessories.length?p.accessories:['Pelvi-lock','Cuscino','Cinghia','Paracolpi']).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div class="mini-block"><div class="mini-title">▣ BORSA ${esc(p.bag.color.toUpperCase())}</div><div class="bag-mini"><div class="bag-icon">▣</div><div><b>Contenuto</b><span>${p.bag.contents.map(esc).join('<br>')}</span></div></div></div><div class="mini-block"><div class="mini-title">▤ NOTE</div><div class="note">${esc(p.notes||'—')}</div></div></article>`}
+function sharedConfigs(){const seen=new Set();return DATA.players.filter(p=>{let k=wheelConfig(p);if(seen.has(k))return false;seen.add(k);return true}).map(p=>{const others=sharedPlayers(p);return `<div class="shared"><span class="wheel-symbol">◉</span><div><b>${esc(p.wheels.diameter)} ${esc(p.wheels.cover)}</b><small>${[p.name,...others.map(x=>x.name)].map(esc).join(', ')}</small></div></div>`}).join('')}
+function players(){let ps=DATA.players.filter(p=>!query||[p.name,p.number,p.role,p.wheels.diameter,p.wheels.cover,p.wheels.spoke].join(' ').toLowerCase().includes(query));return pageHead('SQUADRA','Giocatori','Schede e configurazioni delle attrezzature della squadra','Aggiungi giocatore')+`<div class="player-grid">${ps.map(playerCard).join('')}</div>`}
+function wheelchairs(){return pageHead('DOTAZIONE','Carrozzine','Una scheda tecnica per ogni carrozzina della squadra.')+`<div class="content-grid">${DATA.players.map(p=>`<div class="card"><div class="wheel-mini"><b>#${p.number} ${esc(p.name)}</b><span>♿</span></div><div class="detail-photo" style="height:170px;margin:12px 0">${playerPortrait(p,true)}</div><div class="kv"><div><small>Diametro</small><b>${esc(p.wheels.diameter)}</b></div><div><small>Copertura</small><b>${esc(p.wheels.cover)}</b></div><div><small>Spillo</small><b>${esc(p.wheels.spoke)}</b></div><div><small>Modello</small><b>${esc(p.wheelchair.model)}</b></div></div></div>`).join('')}</div>`}
+function wheels(){let ws=DATA.wheels.filter(w=>!query||[w.id,w.size,w.assignment,w.note].join(' ').toLowerCase().includes(query));return pageHead('DOTAZIONE','Ruote','Ruote censite singolarmente, con assegnazione e note.')+`<div class="section"><div class="table-wrap"><table class="table"><thead><tr><th>ID</th><th>Misura</th><th>Assegnazione</th><th>Note</th></tr></thead><tbody>${ws.map(w=>`<tr><td><b>${esc(w.id)}</b></td><td>${esc(w.size)}</td><td>${esc(w.assignment||'—')}</td><td>${esc(w.note||'—')}</td></tr>`).join('')}</tbody></table></div></div>`}
+function bags(){return pageHead('DOTAZIONE','Borse','Contenitori della squadra e dotazione personale.')+`<div class="content-grid">${DATA.containers.map(c=>`<div class="card"><div class="section-title"><b>${icon(c.type)} ${esc(c.name)}</b><span>${esc(c.type)}</span></div>${DATA.stock.filter(s=>s.container===c.id).map(s=>{let m=mat(s.material);return `<div class="node" style="margin-top:7px"><b>${esc(m.name)} ${esc(m.size)}</b><span class="pill">${esc(m.variant||'')}</span><span class="pill">${s.qty} pezzi</span></div>`}).join('')||'<span class="muted">Nessun contenuto quantitativo registrato.</span>'}</div>`).join('')}</div><div class="section"><h2 class="section-title">Sacche personali</h2><div class="content-grid">${DATA.personalBags.map(p=>`<div class="card"><b>▣ Sacca ${esc(p.color)}</b><div style="margin-top:6px;font-size:11px">${esc(p.person)}</div></div>`).join('')}</div></div>`}
+function inventory(){let ms=DATA.materials.filter(m=>!query||[m.name,m.category,m.size,m.variant].join(' ').toLowerCase().includes(query));return pageHead('MAGAZZINO','Inventario','Quantità aggregate e posizione del materiale.')+`<div class="section"><div class="table-wrap"><table class="table"><thead><tr><th>Materiale</th><th>Categoria</th><th>Variante</th><th>Totale</th><th>Posizioni</th></tr></thead><tbody>${ms.map(m=>`<tr><td><b>${esc(m.name)} ${esc(m.size)}</b></td><td>${esc(m.category)}</td><td>${esc(m.variant)}</td><td class="qty">${totalStock(m.id)}</td><td>${DATA.stock.filter(s=>s.material===m.id).map(s=>`${esc(cname(s.container))} ×${s.qty}`).join('<br>')||'—'}</td></tr>`).join('')}</tbody></table></div></div>`}
+function map(){return pageHead('STRUTTURA','Mappa','Vista concettuale di contenitori, materiali e dotazioni.')+`<div class="section"><div class="tree">${DATA.containers.map(c=>`<div class="node"><b>${icon(c.type)} ${esc(c.name)}</b><div class="children">${DATA.stock.filter(s=>s.container===c.id).map(s=>{let m=mat(s.material);return `<span class="child">${esc(m.name)} ${esc(m.size)} ×${s.qty}</span>`}).join('')}</div></div>`).join('')}<div class="node"><b>👥 GIOCATORI</b><div class="children">${DATA.players.map(p=>`<span class="child">#${p.number} ${esc(p.name)} · ${esc(p.wheels.diameter)}</span>`).join('')}</div></div></div></div>`}
+function checklist(){return pageHead('OPERATIVITÀ','Check-list','Controllo rapido delle dotazioni prima di una trasferta.')+`<div class="section"><h2 class="section-title">Dotazione principale <span>0/${DATA.containers.length} verificati</span></h2>${DATA.containers.map(c=>`<label style="display:flex;gap:10px;align-items:center;padding:13px 4px;border-bottom:1px solid var(--line);font-size:11px"><input type="checkbox"> <b>${icon(c.type)}</b> ${esc(c.name)}</label>`).join('')}</div><div class="section"><h2 class="section-title">Giocatori <span>Controllo individuale</span></h2>${DATA.players.map(p=>`<label style="display:flex;gap:10px;align-items:center;padding:13px 4px;border-bottom:1px solid var(--line);font-size:11px"><input type="checkbox"> #${p.number} <b>${esc(p.name)}</b> · ${esc(p.wheels.diameter)} ${esc(p.wheels.cover)}</label>`).join('')}</div>`}
+function openPlayer(id){const p=DATA.players.find(x=>x.id===id);if(!p)return;currentView='players';query='';$('#search').value='';$('#content').innerHTML=pageHead('SCHEDA GIOCATORE',`#${p.number} · ${esc(p.name)}`,`${esc(p.role)} · dotazione personale`)+`<div class="player-detail"><div class="hero-player"><span class="big-number">#${p.number}</span><span class="role ${p.role==='Difesa'?'defense':''}">${esc(p.role.toUpperCase())}</span><div class="detail-photo">${playerPortrait(p,true)}</div><h2>${esc(p.name)}</h2><div style="opacity:.7;font-size:10px">Carrozzina · ${esc(p.wheelchair.model)}</div></div><div class="detail-panels"><div class="detail-card"><h3>♿ CARROZZINA</h3><div class="kv"><div><small>Modello</small><b>${esc(p.wheelchair.model)}</b></div><div><small>Foto</small><b>${p.wheelchair.photo?'Caricata':'Placeholder'}</b></div></div></div><div class="detail-card"><h3>◉ SPECIFICHE TECNICHE</h3><div class="kv"><div><small>Diametro ruote</small><b>${esc(p.wheels.diameter)}</b></div><div><small>Coperture</small><b>${esc(p.wheels.cover)}</b></div><div><small>Lunghezza spillo</small><b>${esc(p.wheels.spoke)}</b></div></div></div><div class="detail-card"><h3>⚒ ACCESSORI</h3><ul class="access-list">${(p.accessories.length?p.accessories:['Pelvi-lock','Cuscino','Cinghia','Paracolpi']).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div class="detail-card"><h3>🔗 COMPONENTI IN COMUNE</h3><div style="font-size:10px;color:var(--muted)">Stessa combinazione diametro + copertoncino:</div><div class="children">${sharedPlayers(p).map(x=>`<span class="child"><b>#${x.number}</b> ${esc(x.name)}</span>`).join('')||'<span class="child">Nessun altro giocatore</span>'}</div></div><div class="detail-card"><h3>▣ BORSA ${esc(p.bag.color.toUpperCase())}</h3>${p.bag.contents.map(x=>`<div class="node" style="margin-top:7px;font-size:10px">${esc(x)}</div>`).join('')}</div><div class="detail-card"><h3>🎒 ALTRI ACCESSORI / NOTE</h3><div style="font-size:10px;line-height:1.7">${esc(p.notes||'Da completare')}</div></div></div></div>`;bindCards()}
+function bindCards(){document.querySelectorAll('[data-player]').forEach(el=>el.addEventListener('click',()=>openPlayer(el.dataset.player)))}
+document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));$('#search').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();if(query) {if(currentView==='dashboard'){$('#content').innerHTML=pageHead('RICERCA','Risultati','Cerca in giocatori, ruote e materiali.')+`<div class="section"><div class="player-grid">${DATA.players.filter(p=>[p.name,p.number,p.role,p.wheels.cover,p.wheels.diameter].join(' ').toLowerCase().includes(query)).map(playerCard).join('')}</div></div>`;bindCards()} else render()} else render()});$('#mobileMenu').addEventListener('click',()=>document.body.classList.toggle('mobile-nav-open'));render();

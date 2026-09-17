@@ -2,44 +2,48 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0a1a3f">
-<title>Materiale PdRugby</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071a38">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>PdRugby · Equipment Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <div>
-    <div class="eyebrow">PADOVA RUGBY</div>
-    <h1>Materiale PdRugby</h1>
-  </div>
-  <div class="badge">V0.1</div>
-</header>
-
-<main>
-  <section class="hero">
-    <div>
-      <h2>Inventario squadra</h2>
-      <p>Cerca materiale, contenitori, ruote e giocatori. I dati sono quelli forniti nell'inventario iniziale.</p>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><span>PD</span><b>RUGBY</b></div>
+      <div class="brand-tag">ONE TEAM, ONE GOAL</div>
     </div>
-    <input id="search" type="search" placeholder="🔎  Cerca materiale, borsa, ruota, persona..." autocomplete="off">
-  </section>
+    <nav id="sideNav" class="side-nav">
+      <button class="nav-item active" data-view="dashboard"><span>▦</span><b>Dashboard</b></button>
+      <button class="nav-item" data-view="players"><span>●●</span><b>Giocatori</b><i>›</i></button>
+      <button class="nav-item" data-view="wheelchairs"><span>♿</span><b>Carrozzine</b></button>
+      <button class="nav-item" data-view="wheels"><span>◉</span><b>Ruote</b></button>
+      <button class="nav-item" data-view="bags"><span>▣</span><b>Borse</b></button>
+      <button class="nav-item" data-view="inventory"><span>▤</span><b>Inventario</b></button>
+      <button class="nav-item" data-view="map"><span>⌖</span><b>Mappa</b></button>
+      <button class="nav-item" data-view="checklist"><span>✓</span><b>Check-list</b></button>
+    </nav>
+    <div class="sidebar-promo"><div class="promo-wheel">◉</div><strong>Più forti<br><em>insieme.</em></strong></div>
+  </aside>
 
-  <nav class="tabs">
-    <button class="tab active" data-view="dashboard">Panoramica</button>
-    <button class="tab" data-view="inventory">Inventario</button>
-    <button class="tab" data-view="bags">Contenitori</button>
-    <button class="tab" data-view="wheels">Ruote</button>
-    <button class="tab" data-view="map">Mappa</button>
-  </nav>
+  <main class="main">
+    <header class="topbar">
+      <button class="mobile-menu" id="mobileMenu" aria-label="Menu">☰</button>
+      <div class="search-wrap"><span>⌕</span><input id="search" type="search" placeholder="Cerca giocatore, materiale, borsa, ruota..." autocomplete="off"><kbd>⌘ K</kbd></div>
+      <div class="top-actions"><button class="icon-btn" aria-label="Notifiche">♧<i></i></button><div class="user-chip"><div class="user-avatar">♿</div><div><b>PdRugby</b><small>Team Manager</small></div><span>⌄</span></div></div>
+    </header>
 
-  <section id="content"></section>
-</main>
-
-<footer>
-  <span>Materiale PdRugby · V0.1</span>
-  <span>Dati iniziali da inventario fornito</span>
-</footer>
+    <div class="page">
+      <section id="content"></section>
+    </div>
+  </main>
+</div>
 <script src="data.js"></script>
 <script src="app.js"></script>
 </body>

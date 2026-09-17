@@ -1,12 +1,22 @@
-# MaterialePdRugby V0.1
+# MaterialePdRugby V0.2
 
-Prima demo dell'inventario web della squadra.
+Versione grafica responsive dell'Equipment Manager PdRugby.
 
-## Uso locale
-Aprire `index.html` in un browser.
+## Novità
+- Dashboard in stile sportivo/tecnico.
+- Layout desktop con sidebar e layout mobile/adaptive.
+- Schede giocatore con carrozzina, specifiche ruote, accessori, componenti condivisi, borsa e note.
+- Placeholder per le fotografie, predisposti in `data.js`.
+- Inventario, borse, ruote, mappa e check-list.
+- Configurazioni ruote condivise calcolate automaticamente da diametro + copertoncino.
 
-## GitHub Pages
-Il progetto è composto da HTML/CSS/JavaScript statici, quindi è adatto a GitHub Pages. Vedi la documentazione ufficiale GitHub Pages.
+## Foto
+Inserire le immagini, ad esempio, in:
+`images/giocatori/` e `images/carrozine/`.
+Poi impostare in `data.js` il campo `photo`, ad esempio:
+`photo: "images/giocatori/nicolo.jpg"`.
 
-## Dati
-I dati iniziali sono contenuti in `data.js`. In V0.1 non esiste ancora un backend multiutente: la demo serve a validare struttura e interfaccia.
+Formato consigliato: JPG/WEBP; giocatore 1200x1200 px; carrozzina 1600x1200 px; borsa 1200x900 px.
+
+## Uso
+Aprire `index.html` in un browser oppure pubblicare il contenuto del repository con GitHub Pages.
