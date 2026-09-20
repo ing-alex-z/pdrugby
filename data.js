@@ -1,47 +1,45 @@
 /*
- * DATI PdRugby — V0.4 (Aggiornato)
+ * DATI PdRugby — V0.6
  *
- * Struttura consigliata per le immagini:
+ * V0.6 mantiene compatibilità con il formato dati precedente.
+ * app.js normalizza automaticamente:
+ *   wheels.handrim: string -> oggetto strutturato
+ *   accessories: array -> oggetto strutturato
+ *
+ * Immagini:
  * images/
- * ├── logo/logo_PDR.png
- * ├── giocatori/ (nicolo.jpg, nando.jpg, sante.jpg, paolino.jpg, hassan.jpg, ahmed.jpg, nicolas.jpg, rambo.jpg, luca.jpg, emina.jpg, massimo.jpg, rosa.jpg, francesco.jpg, amine.jpg, matteo.jpg)
- * ├── carrozzine/ (attacco.jpg, difesa.jpg)
- * ├── borse/ (sacca_blu_materiale.jpg, sacca_nera.jpg, sacca_grigia.jpg)
+ * ├── logo/
+ * ├── giocatori/
+ * ├── carrozzine/
+ * ├── borse/
  * └── ruote/
  */
 const IMG = {
   logo: "images/logo/logo_PDR.png",
   players: {
-    nicolo: "images/giocatori/nicolo.jpg",
-    nando: "images/giocatori/nando.jpg",
-    sante: "images/giocatori/sante.jpg",
-    paolino: "images/giocatori/paolino.jpg",
-    hassan: "images/giocatori/hassan.jpg",
-    ahmed: "images/giocatori/ahmed.jpg",
-    nicolas: "images/giocatori/nicolas.jpg",
-    rambo: "images/giocatori/rambo.jpg",
-    luca: "images/giocatori/luca.jpg",
-    emina: "images/giocatori/emina.jpg",
-    massimo: "images/giocatori/massimo.jpg",
-    rosa: "images/giocatori/rosa.jpg",
-    francesco: "images/giocatori/francesco.jpg",
-    amine: "images/giocatori/amine.jpg",
-    matteo: "images/giocatori/matteo.jpg"
+    nicolo:"images/giocatori/nicolo.jpg", nando:"images/giocatori/nando.jpg",
+    sante:"images/giocatori/sante.jpg", paolino:"images/giocatori/paolino.jpg",
+    hassan:"images/giocatori/hassan.jpg", ahmed:"images/giocatori/ahmed.jpg",
+    nicolas:"images/giocatori/nicolas.jpg", rambo:"images/giocatori/rambo.jpg",
+    luca:"images/giocatori/luca.jpg", emina:"images/giocatori/emina.jpg",
+    massimo:"images/giocatori/massimo.jpg", rosa:"images/giocatori/rosa.jpg",
+    francesco:"images/giocatori/francesco.jpg", amine:"images/giocatori/amine.jpg",
+    matteo:"images/giocatori/matteo.jpg"
   },
   chairs: {
-    attack: "images/carrozzine/attacco.jpg",
-    defense: "images/carrozzine/difesa.jpg"
+    attack:"images/carrozzine/attacco.jpg",
+    defense:"images/carrozzine/difesa.jpg"
   },
   bags: {
-    blue: "images/borse/sacca_blu_materiale.jpg",
-    black: "images/borse/sacca_nera.jpg",
-    grey: "images/borse/sacca_grigia.jpg"
+    blue:"images/borse/sacca_blu_materiale.jpg",
+    black:"images/borse/sacca_nera.jpg",
+    grey:"images/borse/sacca_grigia.jpg"
   },
   wheels: {
-    red25: "images/ruote/25_attacco_rosse.jpg",
-    red24: "images/ruote/24_attacco_rosse.jpg",
-    tubular24: "images/ruote/24-tubolari.jpg",
-    grey25: "images/ruote/25_difesa_grigie.jpg"
+    red25:"images/ruote/25_attacco_rosse.jpg",
+    red24:"images/ruote/24_attacco_rosse.jpg",
+    tubular24:"images/ruote/24-tubolari.jpg",
+    grey25:"images/ruote/25_difesa_grigie.jpg"
   }
 };
 
@@ -85,5 +83,11 @@ const DATA = {
     {id:"R001",size:'26"',assignment:"Hamed",note:""},{id:"R002",size:'26"',assignment:"Hamed",note:""},{id:"R003",size:'26"',assignment:"Hamed",note:""},{id:"R004",size:'26"',assignment:"Hamed",note:""},{id:"R005",size:'26"',assignment:"Hamed",note:"Una rotta"},
     {id:"R006",size:'25"',assignment:"",note:"Copertoncino grigio raggi"},{id:"R007",size:'24"',assignment:"Nando",note:"Copertoncino rosso Spinergy"},{id:"R008",size:'24"',assignment:"",note:"Copertoncino rosso Spinergy"},{id:"R009",size:'24"',assignment:"Niki",note:"Copertoncino rosso Spinergy - Niki vecchia"},{id:"R010",size:'24"',assignment:"",note:"Copertoncino rosso Spinergy"},{id:"R011",size:'24"',assignment:"",note:"Tubolare PDR 4"},{id:"R012",size:'25"',assignment:"",note:""},{id:"R013",size:'24"',assignment:"",note:""}
   ],
-  personalBags:["Hassan","Francesco","Nando","Roza","Brugno","Sach","Sante","Nicolas","Ahmed","Max","Niki","Amine"].map((person,i)=>({id:`SP${String(i+1).padStart(3,'0')}`,person,color:(person==="Francesco"||person==="Roza")?"Grigia":"Nera",photo:(person==="Francesco"||person==="Roza")?IMG.bags.grey:IMG.bags.black,contents:[]}))
+  personalBags:["Hassan","Francesco","Nando","Roza","Brugno","Sach","Sante","Nicolas","Ahmed","Max","Niki","Amine"].map((person,i)=>({
+    id:`SP${String(i+1).padStart(3,"0")}`,
+    person,
+    color:(person==="Francesco"||person==="Roza")?"Grigia":"Nera",
+    photo:(person==="Francesco"||person==="Roza")?IMG.bags.grey:IMG.bags.black,
+    contents:[]
+  }))
 };

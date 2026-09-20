@@ -6,18 +6,16 @@
 <meta name="theme-color" content="#071a38">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Materiale PdRugby</title>
+<title>Materiale PdRugby — V0.6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.6">
 </head>
 <body>
-
-<!-- OVERLAY LOGIN TEMPORANEO -->
 <div id="loginOverlay" class="login-overlay">
   <div class="login-card">
-    <div class="brand-mark" style="justify-content: center; margin-bottom: 15px;">
+    <div class="brand-mark" style="justify-content:center;margin-bottom:15px;">
       <span>PD</span><b>RUGBY</b>
     </div>
     <h2>Accesso Riservato</h2>
@@ -25,14 +23,17 @@
     <form id="loginForm">
       <input type="password" id="passwordInput" placeholder="Password di accesso" required autocomplete="current-password">
       <button type="submit">Accedi</button>
-      <div id="loginError" class="login-error hidden">Password errata. Riprova.</div>
+      <div id="loginError" class="login-error hidden" aria-live="polite">Password errata. Riprova.</div>
     </form>
   </div>
 </div>
 
 <div class="app-shell">
 <aside class="sidebar">
-  <div class="brand"><div class="brand-mark"><span>PD</span><b>RUGBY</b></div><div class="brand-tag">EQUIPMENT MANAGER</div></div>
+  <div class="brand">
+    <div class="brand-mark"><span>PD</span><b>RUGBY</b></div>
+    <div class="brand-tag">EQUIPMENT MANAGER · V0.6</div>
+  </div>
   <nav class="side-nav">
     <button class="nav-item active" data-view="dashboard"><span>⌂</span><b>Dashboard</b><i>›</i></button>
     <button class="nav-item" data-view="players"><span>●●</span><b>Giocatori</b><i>›</i></button>
@@ -45,6 +46,7 @@
   </nav>
   <div class="sidebar-promo"><div class="promo-wheel">◉</div><strong>Più forti<br><em>insieme.</em></strong></div>
 </aside>
+
 <div class="main">
   <header class="topbar">
     <button id="mobileMenu" class="mobile-menu" aria-label="Apri menu">☰</button>
@@ -64,7 +66,8 @@
   <main class="page" id="content"></main>
 </div>
 </div>
-<script src="data.js"></script>
-<script src="app.js"></script>
+
+<script src="data.js?v=0.6"></script>
+<script src="app.js?v=0.6"></script>
 </body>
 </html>
