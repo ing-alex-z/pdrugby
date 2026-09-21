@@ -15,7 +15,15 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
 // SHA-256 della password temporanea: pdrugby2026
 const PASS_HASH = "88dd01db53af6248b327211b46176db942c2d963f46beebfb9659b43f212ac95";
 const AUTH_KEY = "pdr_auth";
-const ASSET_VERSION = "0.6";
+const ASSET_VERSION = "0.7";
+const STOCK_STORAGE_KEY = "pdr_stock_v07";
+const DEFAULT_CRITICAL_THRESHOLDS = {
+  M001: 5, M002: 2, M003: 2, M004: 5,
+  M005: 2, M006: 2, M007: 1, M008: 1, M009: 1,
+  M010: 2, M011: 0, M012: 0, M013: 0, M014: 2,
+  M015: 1, M016: 1, M017: 2, M018: 2
+};
+let stockDirty = false;
 
 // ------------------------------------------
 // Utility dati
@@ -52,6 +60,84 @@ function stockIndex() {
   });
 
   return { byMaterial, byContainer };
+}
+
+function criticalThreshold(m) {
+  if (!m) return 0;
+  const value = m.criticalThreshold !== undefined ? m.criticalThreshold : (DATA.criticalThresholds ? DATA.criticalThresholds[m.id] : undefined);
+  if (value !== undefined && value !== null && value !== "") {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(0, n) : 0;
+  }
+  return Number(DEFAULT_CRITICAL_THRESHOLDS[m.id] || 0);
+}
+function stockStatus(m, qty) {
+  const n = Number(qty || 0);
+  const threshold = criticalThreshold(m);
+  if (n === 0) return "out";
+  if (threshold > 0 && n <= threshold) return "critical";
+  return "ok";
+}
+function loadStockState() {
+  if (!checkDataIntegrity()) return;
+  try {
+    const raw = localStorage.getItem(STOCK_STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (!Array.isArray(saved)) return;
+    const savedMap = new Map(saved.map(x => [`${x.container}|${x.material}`, Number(x.qty) || 0]));
+    const currentMap = new Map((DATA.stock || []).map(x => [`${x.container}|${x.material}`, x]));
+    saved.forEach(x => {
+      const key = `${x.container}|${x.material}`;
+      if (currentMap.has(key)) currentMap.get(key).qty = Math.max(0, Number(x.qty) || 0);
+      else if (DATA.containers.some(c => c.id === x.container) && DATA.materials.some(m => m.id === x.material)) {
+        DATA.stock.push({container:x.container, material:x.material, qty:Math.max(0, Number(x.qty)||0)});
+      }
+    });
+    stockDirty = true;
+  } catch (err) {
+    console.warn("[Inventario] Stato locale non leggibile:", err);
+  }
+}
+function saveStockState() {
+  try {
+    localStorage.setItem(STOCK_STORAGE_KEY, JSON.stringify(DATA.stock || []));
+    stockDirty = true;
+    updateStockIndicator();
+  } catch (err) {
+    console.error("[Inventario] Impossibile salvare:", err);
+  }
+}
+function resetStockState() {
+  if (!confirm("Ripristinare le quantità originali di data.js? Le modifiche locali andranno perse.")) return;
+  localStorage.removeItem(STOCK_STORAGE_KEY);
+  location.reload();
+}
+function findStock(containerId, materialId) {
+  return (DATA.stock || []).find(x => x.container === containerId && x.material === materialId);
+}
+function changeStock(containerId, materialId, delta) {
+  let row = findStock(containerId, materialId);
+  if (!row && delta > 0) {
+    row = {container:containerId, material:materialId, qty:0};
+    DATA.stock.push(row);
+  }
+  if (!row) return;
+  row.qty = Math.max(0, Number(row.qty || 0) + Number(delta || 0));
+  saveStockState();
+  render();
+}
+function addStock(containerId, materialId, qty) {
+  const n = Math.max(1, parseInt(qty, 10) || 1);
+  changeStock(containerId, materialId, n);
+}
+function materialLabel(m) {
+  if (!m) return "";
+  return [m.name, m.size, m.variant].filter(Boolean).join(" · ");
+}
+function updateStockIndicator() {
+  const el = document.getElementById("stockStatus");
+  if (el) el.textContent = stockDirty ? "MODIFICHE LOCALI" : "DATI INIZIALI";
 }
 
 function totalStock(id, index) {
@@ -287,7 +373,7 @@ function pageHead(kicker, title, desc) {
   return `<div class="page-head">
     <div><div class="eyebrow">${esc(kicker)}</div><h1>${title}</h1><p>${esc(desc)}</p></div>
     <div class="top-actions-head">
-      <span class="readonly">SOLA LETTURA</span>
+      <span class="readonly" id="stockStatus">DATI INIZIALI</span>
       <button id="logoutBtn" class="logout-btn" title="Esci">🔒 Esci</button>
     </div>
   </div>`;
@@ -428,59 +514,59 @@ function wheels() {
       <tbody>${rows}</tbody></table></div></div>`;
 }
 
+function stockEditorRow(c, s) {
+  const m = mat(s.material);
+  if (!m) return "";
+  const status = stockStatus(m, s.qty);
+  return `<div class="stock-row ${status === "critical" ? "stock-critical" : ""} ${status === "out" ? "stock-out" : ""}">
+    <div class="stock-info"><b>${esc(m.name)} ${esc(m.size)}</b>${m.variant ? `<span class="pill">${esc(m.variant)}</span>` : ""}
+      ${status === "critical" ? `<span class="stock-alert">SCORTA CRITICA · ≤ ${esc(criticalThreshold(m))}</span>` : ""}
+      ${status === "out" ? `<span class="stock-alert">ESAURITO</span>` : ""}
+    </div>
+    <div class="stock-controls">
+      <button class="qty-btn" data-stock-action="dec" data-container="${esc(c.id)}" data-material="${esc(m.id)}" aria-label="Diminuisci">−</button>
+      <strong class="stock-qty">${esc(s.qty)}</strong>
+      <button class="qty-btn" data-stock-action="inc" data-container="${esc(c.id)}" data-material="${esc(m.id)}" aria-label="Aumenta">+</button>
+    </div>
+  </div>`;
+}
+function addMaterialBox(c) {
+  const options = DATA.materials.map(m => `<option value="${esc(m.id)}">${esc(materialLabel(m))}</option>`).join("");
+  return `<div class="add-stock"><select data-add-material="${esc(c.id)}"><option value="">＋ Aggiungi materiale…</option>${options}</select><input type="number" min="1" value="1" data-add-qty="${esc(c.id)}" aria-label="Quantità"><button class="add-stock-btn" data-add-stock="${esc(c.id)}">Aggiungi</button></div>`;
+}
 function bags() {
   const index = stockIndex();
-
   const containersHtml = DATA.containers.map(c => {
     const photo = c.photo ? photoBox(c.photo, c.name, "small-photo") : "";
     const stockItems = index.byContainer[c.id] || [];
-    let itemsHtml = stockItems.map(s => {
-      const m = mat(s.material);
-      if (!m) return "";
-      return `<div class="node"><b>${esc(m.name)} ${esc(m.size)}</b>
-        <span class="pill">${esc(m.variant || "")}</span>
-        <span class="pill">${esc(s.qty)} pezzi</span></div>`;
-    }).join("");
+    let itemsHtml = stockItems.map(s => stockEditorRow(c, s)).join("");
     if (!itemsHtml) itemsHtml = '<span class="muted">Nessun contenuto quantitativo registrato.</span>';
-    return `<div class="card"><div class="section-title"><b>${esc(c.name)}</b><span>${esc(c.type)}</span></div>${photo}${itemsHtml}</div>`;
+    return `<div class="card stock-card"><div class="section-title"><b>${esc(c.name)}</b><span>${esc(c.type)}</span></div>${photo}<div class="stock-list">${itemsHtml}</div>${addMaterialBox(c)}</div>`;
   }).join("");
-
   const personalBagsHtml = DATA.personalBags.map(p =>
-    `<div class="card personal-bag">${photoBox(p.photo, "Sacca " + p.color, "small-photo")}
-      <b>Sacca ${esc(p.color)}</b><div>${esc(p.person)}</div></div>`
+    `<div class="card personal-bag">${photoBox(p.photo, "Sacca " + p.color, "small-photo")}<b>Sacca ${esc(p.color)}</b><div>${esc(p.person)}</div></div>`
   ).join("");
-
   return pageHead("DOTAZIONE", "Borse", "Contenitori della squadra e dotazione personale.") +
+    `<div class="section stock-toolbar"><span><b>Modifica rapida quantità</b> · Le modifiche vengono salvate sul dispositivo.</span><button class="reset-stock" id="resetStockBtn">Ripristina dati iniziali</button></div>` +
     `<div class="content-grid">${containersHtml}</div>
-     <div class="section"><h2 class="section-title">Sacche personali</h2>
-       <div class="content-grid">${personalBagsHtml}</div>
-     </div>`;
+     <div class="section"><h2 class="section-title">Sacche personali</h2><div class="content-grid">${personalBagsHtml}</div></div>`;
 }
 
 function inventory() {
   const index = stockIndex();
-  const ms = DATA.materials.filter(m => !query || [
-    m.name, m.category, m.size, m.variant
-  ].join(" ").toLowerCase().includes(query));
-
+  const ms = DATA.materials.filter(m => !query || [m.name, m.category, m.size, m.variant].join(" ").toLowerCase().includes(query));
   const rows = ms.map(m => {
-    const pos = (index.byMaterial[m.id] || []).map(s =>
-      `${esc(cname(s.container))} ×${esc(s.qty)}`
-    ).join("<br>") || "—";
-
-    return `<tr>
-      <td><b>${esc(m.name)} ${esc(m.size)}</b></td>
-      <td>${esc(m.category)}</td>
-      <td>${esc(m.variant)}</td>
-      <td class="qty">${totalStock(m.id, index)}</td>
-      <td>${pos}</td>
+    const total = totalStock(m.id, index);
+    const status = stockStatus(m, total);
+    const pos = (index.byMaterial[m.id] || []).map(s => `${esc(cname(s.container))} ×${esc(s.qty)}`).join("<br>") || "—";
+    return `<tr class="${status === "critical" ? "stock-critical-row" : ""} ${status === "out" ? "stock-out-row" : ""}">
+      <td><b>${esc(m.name)} ${esc(m.size)}</b></td><td>${esc(m.category)}</td><td>${esc(m.variant)}</td>
+      <td class="qty"><strong>${esc(total)}</strong>${status === "critical" ? `<span class="stock-alert">CRITICO</span>` : status === "out" ? `<span class="stock-alert">ESAURITO</span>` : ""}</td><td>${pos}</td>
     </tr>`;
   }).join("");
-
   return pageHead("MAGAZZINO", "Inventario", "Quantità aggregate e posizione del materiale.") +
-    `<div class="section"><div class="table-wrap"><table class="table">
-      <thead><tr><th>Materiale</th><th>Categoria</th><th>Variante</th><th>Totale</th><th>Posizioni</th></tr></thead>
-      <tbody>${rows}</tbody></table></div></div>`;
+    `<div class="section stock-toolbar"><span>🔴 <b>Scorta critica</b> = quantità pari o inferiore alla soglia configurata.</span><button class="reset-stock" id="resetStockBtn">Ripristina dati iniziali</button></div>` +
+    `<div class="section"><div class="table-wrap"><table class="table"><thead><tr><th>Materiale</th><th>Categoria</th><th>Variante</th><th>Totale</th><th>Posizioni</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
 function map() {
@@ -641,6 +727,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const contentEl = $("#content");
   if (contentEl) {
     contentEl.addEventListener("click", e => {
+      const qtyBtn = e.target.closest("[data-stock-action]");
+      if (qtyBtn) {
+        e.stopPropagation();
+        const delta = qtyBtn.dataset.stockAction === "inc" ? 1 : -1;
+        changeStock(qtyBtn.dataset.container, qtyBtn.dataset.material, delta);
+        return;
+      }
+      const addBtn = e.target.closest("[data-add-stock]");
+      if (addBtn) {
+        e.stopPropagation();
+        const containerId = addBtn.dataset.addStock;
+        const select = contentEl.querySelector(`[data-add-material="${containerId}"]`);
+        const input = contentEl.querySelector(`[data-add-qty="${containerId}"]`);
+        if (!select || !select.value) { alert("Seleziona il materiale da aggiungere."); return; }
+        addStock(containerId, select.value, input ? input.value : 1);
+        return;
+      }
+      const resetBtn = e.target.closest("#resetStockBtn");
+      if (resetBtn) { e.stopPropagation(); resetStockState(); return; }
       const card = e.target.closest("[data-player]");
       if (card) openPlayer(card.dataset.player);
     });
@@ -675,6 +780,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = $("#loginForm");
   if (form) form.addEventListener("submit", handleLogin);
 
+  const togglePassword = $("#togglePassword");
+  const passwordInput = $("#passwordInput");
+  if (togglePassword && passwordInput) {
+    togglePassword.addEventListener("click", () => {
+      const visible = passwordInput.type === "text";
+      passwordInput.type = visible ? "password" : "text";
+      togglePassword.textContent = visible ? "👁" : "🙈";
+      togglePassword.setAttribute("aria-label", visible ? "Mostra password" : "Nascondi password");
+    });
+  }
+
+  loadStockState();
   checkAuth();
   render();
+  updateStockIndicator();
 });

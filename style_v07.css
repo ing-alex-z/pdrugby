@@ -1,0 +1,57 @@
+/* ==========================================
+   PdRugby Inventory — V0.7 additions
+   ========================================== */
+
+/* Login: password reveal */
+.password-wrap{position:relative;width:100%;margin-bottom:12px}
+.password-wrap input{margin-bottom:0!important;padding-right:48px!important}
+.password-toggle{position:absolute!important;right:5px;top:5px;width:38px!important;height:38px!important;padding:0!important;background:transparent!important;color:#64748a!important;border:0!important;border-radius:7px!important;display:grid;place-items:center;font-size:17px!important;cursor:pointer!important}
+.password-toggle:hover{background:#edf2f7!important;color:var(--navy)!important}
+
+/* Stock editor */
+.stock-toolbar{display:flex;align-items:center;justify-content:space-between;gap:15px;font-size:10px}
+.reset-stock{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:7px;padding:8px 11px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap}
+.reset-stock:hover{background:#f1f5f9}
+.stock-list{display:grid;gap:7px}
+.stock-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f6f8fb;border:1px solid var(--line);border-radius:9px;padding:9px 10px;transition:.15s}
+.stock-row.stock-critical{background:#fff5f6;border-color:#f2b5c0}
+.stock-row.stock-out{background:#fff0f2;border-color:#e21e3f}
+.stock-info{min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:4px 3px;font-size:9px}
+.stock-info>b{margin-right:3px}
+.stock-alert{display:inline-block;background:#e21e3f;color:#fff;border-radius:999px;padding:3px 6px;font-size:7px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+.stock-controls{display:flex;align-items:center;gap:5px;flex:none}
+.qty-btn{width:34px;height:34px;border:1px solid #cbd5e1;background:#fff;color:var(--navy);border-radius:8px;font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;font-weight:600;touch-action:manipulation}
+.qty-btn:hover{background:#edf3f9}
+.qty-btn:active{transform:scale(.95)}
+.stock-qty{min-width:32px;text-align:center;font-size:13px}
+.add-stock{display:grid;grid-template-columns:minmax(0,1fr) 62px auto;gap:6px;margin-top:9px}
+.add-stock select,.add-stock input{width:100%;border:1px solid var(--line);background:#fff;border-radius:7px;padding:9px;font-size:9px;min-width:0}
+.add-stock-btn{border:0;background:var(--blue);color:#fff;border-radius:7px;padding:0 11px;font-size:9px;font-weight:800;cursor:pointer;white-space:nowrap}
+.add-stock-btn:hover{background:var(--navy2)}
+.stock-critical-row td{background:#fff7f8}
+.stock-out-row td{background:#fff0f2}
+.stock-critical-row td:first-child,.stock-out-row td:first-child{border-left:3px solid var(--red)}
+.stock-critical-row .qty,.stock-out-row .qty{color:var(--red)}
+.table .stock-alert{margin-left:7px;vertical-align:middle}
+
+/* Mobile usability */
+@media(max-width:900px){
+  .stock-toolbar{align-items:flex-start;flex-direction:column}
+  .reset-stock{width:100%}
+  .stock-row{padding:10px}
+  .qty-btn{width:40px;height:40px}
+  .stock-qty{font-size:14px;min-width:34px}
+  .add-stock{grid-template-columns:minmax(0,1fr) 58px}
+  .add-stock-btn{grid-column:1/-1;height:40px}
+}
+@media(max-width:560px){
+  .login-card{padding:25px 18px}
+  .stock-toolbar{font-size:9px}
+  .stock-row{align-items:flex-end}
+  .stock-info{padding-right:3px}
+  .add-stock{grid-template-columns:minmax(0,1fr) 58px}
+  .add-stock select,.add-stock input{height:42px;font-size:10px}
+  .add-stock-btn{font-size:10px}
+  .table{font-size:10px}
+  .table th,.table td{padding:9px 7px}
+}

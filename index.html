@@ -6,11 +6,12 @@
 <meta name="theme-color" content="#071a38">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Materiale PdRugby — V0.6</title>
+<title>Materiale PdRugby — V0.7</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.6">
+<link rel="stylesheet" href="style.css?v=0.7">
+<link rel="stylesheet" href="style_v07.css?v=0.7">
 </head>
 <body>
 <div id="loginOverlay" class="login-overlay">
@@ -21,7 +22,7 @@
     <h2>Accesso Riservato</h2>
     <p>Inserisci la password per consultare il materiale della squadra.</p>
     <form id="loginForm">
-      <input type="password" id="passwordInput" placeholder="Password di accesso" required autocomplete="current-password">
+      <div class="password-wrap"><input type="password" id="passwordInput" placeholder="Password di accesso" required autocomplete="current-password"><button type="button" id="togglePassword" class="password-toggle" aria-label="Mostra password">👁</button></div>
       <button type="submit">Accedi</button>
       <div id="loginError" class="login-error hidden" aria-live="polite">Password errata. Riprova.</div>
     </form>
@@ -32,7 +33,7 @@
 <aside class="sidebar">
   <div class="brand">
     <div class="brand-mark"><span>PD</span><b>RUGBY</b></div>
-    <div class="brand-tag">EQUIPMENT MANAGER · V0.6</div>
+    <div class="brand-tag">EQUIPMENT MANAGER · V0.7</div>
   </div>
   <nav class="side-nav">
     <button class="nav-item active" data-view="dashboard"><span>⌂</span><b>Dashboard</b><i>›</i></button>
@@ -56,7 +57,7 @@
       <kbd>CTRL K</kbd>
     </div>
     <div class="top-actions">
-      <div class="readonly top-readonly">SOLA LETTURA</div>
+      <div class="readonly top-readonly" id="stockStatus">DATI INIZIALI</div>
       <div class="user-chip">
         <div class="user-avatar">PD</div>
         <div><b>PdRugby</b><small>Team Manager</small></div>
@@ -67,7 +68,7 @@
 </div>
 </div>
 
-<script src="data.js?v=0.6"></script>
-<script src="app.js?v=0.6"></script>
+<script src="data.js?v=0.7"></script>
+<script src="app.js?v=0.7"></script>
 </body>
 </html>
