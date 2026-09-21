@@ -1,5 +1,5 @@
 // ==========================================
-// PDRugby Inventory — V0.6
+// PDRugby Inventory — V0.8
 // ==========================================
 
 let currentView = "dashboard";
@@ -15,8 +15,8 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
 // SHA-256 della password temporanea: pdrugby2026
 const PASS_HASH = "88dd01db53af6248b327211b46176db942c2d963f46beebfb9659b43f212ac95";
 const AUTH_KEY = "pdr_auth";
-const ASSET_VERSION = "0.7";
-const STOCK_STORAGE_KEY = "pdr_stock_v07";
+const ASSET_VERSION = "0.8";
+const STOCK_STORAGE_KEY = "pdr_stock_v08";
 const DEFAULT_CRITICAL_THRESHOLDS = {
   M001: 5, M002: 2, M003: 2, M004: 5,
   M005: 2, M006: 2, M007: 1, M008: 1, M009: 1,
@@ -24,6 +24,8 @@ const DEFAULT_CRITICAL_THRESHOLDS = {
   M015: 1, M016: 1, M017: 2, M018: 2
 };
 let stockDirty = false;
+let baseStockSnapshot = [];
+let importedDataActive = false;
 
 // ------------------------------------------
 // Utility dati
@@ -138,6 +140,124 @@ function materialLabel(m) {
 function updateStockIndicator() {
   const el = document.getElementById("stockStatus");
   if (el) el.textContent = stockDirty ? "MODIFICHE LOCALI" : "DATI INIZIALI";
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+function downloadBlob(filename, content, type = "application/octet-stream") {
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function timestampStamp() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+function currentStockMap(rows) {
+  return new Map((rows || []).map(x => [`${x.container}|${x.material}`, Number(x.qty) || 0]));
+}
+function stockChanges() {
+  const base = currentStockMap(baseStockSnapshot);
+  const current = currentStockMap(DATA.stock || []);
+  const keys = new Set([...base.keys(), ...current.keys()]);
+  return [...keys].sort().map(key => {
+    const [container, material] = key.split("|");
+    const oldQty = base.get(key) || 0;
+    const newQty = current.get(key) || 0;
+    if (oldQty === newQty) return null;
+    return {container, material, old: oldQty, new: newQty};
+  }).filter(Boolean);
+}
+function exportChangesJson() {
+  const changes = stockChanges();
+  const payload = {
+    format: "PdRugby inventory update",
+    version: ASSET_VERSION,
+    exportedAt: new Date().toISOString(),
+    changes
+  };
+  downloadBlob(`PdRugby_update_${timestampStamp()}.json`, JSON.stringify(payload, null, 2), "application/json");
+}
+function exportBackupJson() {
+  const payload = {
+    format: "PdRugby inventory backup",
+    version: ASSET_VERSION,
+    exportedAt: new Date().toISOString(),
+    data: cloneJson(DATA)
+  };
+  downloadBlob(`PdRugby_backup_${timestampStamp()}.json`, JSON.stringify(payload, null, 2), "application/json");
+}
+function exportDataJs() {
+  const data = cloneJson(DATA);
+  if (!data.criticalThresholds) data.criticalThresholds = cloneJson(DEFAULT_CRITICAL_THRESHOLDS);
+  const header = `/*\n * DATI PdRugby — esportazione V${ASSET_VERSION}\n * Generato automaticamente dall'inventario.\n * Sostituire il data.js del repository con questo file per aggiornare il database master.\n */\nconst DATA = `;
+  downloadBlob(`data_PdRugby_${timestampStamp()}.js`, header + JSON.stringify(data, null, 2) + ";\n", "text/javascript");
+}
+function importBackup(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const payload = JSON.parse(reader.result);
+      const imported = payload?.data || payload;
+      if (!imported || !Array.isArray(imported.players) || !Array.isArray(imported.containers) || !Array.isArray(imported.materials) || !Array.isArray(imported.stock)) {
+        throw new Error("File non riconosciuto: struttura dati incompleta.");
+      }
+      if (!confirm("Importare questo backup? I dati attualmente modificati sul dispositivo verranno sostituiti.")) return;
+      Object.keys(DATA).forEach(k => delete DATA[k]);
+      Object.assign(DATA, cloneJson(imported));
+      normalizeData();
+      localStorage.setItem(STOCK_STORAGE_KEY, JSON.stringify(DATA.stock || []));
+      baseStockSnapshot = cloneJson(DATA.stock || []);
+      stockDirty = false;
+      importedDataActive = true;
+      render();
+      updateStockIndicator();
+      alert("Backup importato correttamente.");
+    } catch (err) {
+      console.error("[Import]", err);
+      alert(`Impossibile importare il file.\n${err.message || "Formato non valido."}`);
+    }
+  };
+  reader.readAsText(file);
+}
+function dataManager() {
+  const changes = stockChanges();
+  return pageHead("DATI · BACKUP / EXPORT", "Gestione dati", "Modifica l'inventario sul dispositivo, poi esporta il database aggiornato.") +
+    `<div class="data-manager-grid">
+      <div class="section data-card">
+        <div class="data-icon">📤</div><h2>Database aggiornato</h2>
+        <p>Genera un nuovo <b>data.js</b> con le quantità attuali. È il file da caricare nel repository per aggiornare il database master.</p>
+        <button class="primary-data-btn" id="exportDataJsBtn">Esporta data.js aggiornato</button>
+      </div>
+      <div class="section data-card">
+        <div class="data-icon">↗</div><h2>Solo modifiche</h2>
+        <p>Genera un piccolo JSON con le sole variazioni rispetto ai dati iniziali.</p>
+        <strong>${changes.length} modifiche</strong>
+        <button class="data-btn" id="exportChangesBtn">Esporta aggiornamento JSON</button>
+      </div>
+      <div class="section data-card">
+        <div class="data-icon">💾</div><h2>Backup completo</h2>
+        <p>Salva una copia completa dei dati attuali. Utile prima di fare modifiche importanti.</p>
+        <button class="data-btn" id="exportBackupBtn">Esporta backup JSON</button>
+      </div>
+      <div class="section data-card">
+        <div class="data-icon">📥</div><h2>Importa backup</h2>
+        <p>Ripristina un backup JSON precedentemente esportato su questo dispositivo.</p>
+        <input id="importBackupInput" type="file" accept="application/json,.json" class="hidden-file-input">
+        <button class="data-btn" id="importBackupBtn">Importa backup JSON</button>
+      </div>
+    </div>
+    <div class="section export-flow"><h2 class="section-title">Flusso consigliato <span>semplice</span></h2>
+      <div class="flow-steps"><span>1 · Modifica inventario</span><b>→</b><span>2 · Esporta data.js</span><b>→</b><span>3 · Carica su GitHub</span><b>→</b><span>4 · GitHub Pages aggiornata</span></div>
+    </div>`;
 }
 
 function totalStock(id, index) {
@@ -617,6 +737,7 @@ function render() {
   else if (currentView === "inventory") html = inventory();
   else if (currentView === "map") html = map();
   else if (currentView === "checklist") html = checklist();
+  else if (currentView === "data") html = dataManager();
 
   const content = $("#content");
   if (content) content.innerHTML = html;
@@ -744,12 +865,27 @@ document.addEventListener("DOMContentLoaded", () => {
         addStock(containerId, select.value, input ? input.value : 1);
         return;
       }
+      const exportDataBtn = e.target.closest("#exportDataJsBtn");
+      if (exportDataBtn) { e.stopPropagation(); exportDataJs(); return; }
+      const exportChangesBtn = e.target.closest("#exportChangesBtn");
+      if (exportChangesBtn) { e.stopPropagation(); exportChangesJson(); return; }
+      const exportBackupBtn = e.target.closest("#exportBackupBtn");
+      if (exportBackupBtn) { e.stopPropagation(); exportBackupJson(); return; }
+      const importBtn = e.target.closest("#importBackupBtn");
+      if (importBtn) { e.stopPropagation(); document.getElementById("importBackupInput")?.click(); return; }
       const resetBtn = e.target.closest("#resetStockBtn");
       if (resetBtn) { e.stopPropagation(); resetStockState(); return; }
       const card = e.target.closest("[data-player]");
       if (card) openPlayer(card.dataset.player);
     });
   }
+
+  contentEl.addEventListener("change", e => {
+    if (e.target.id !== "importBackupInput") return;
+    const file = e.target.files?.[0];
+    if (file) importBackup(file);
+    e.target.value = "";
+  });
 
   document.querySelectorAll(".nav-item").forEach(b =>
     b.addEventListener("click", () => nav(b.dataset.view))
@@ -791,6 +927,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  baseStockSnapshot = cloneJson(DATA.stock || []);
   loadStockState();
   checkAuth();
   render();
