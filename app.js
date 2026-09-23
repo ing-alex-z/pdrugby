@@ -1,5 +1,5 @@
 // ==========================================
-// PDRugby Inventory — V0.8
+// PDRugby Inventory — V0.9
 // ==========================================
 
 let currentView = "dashboard";
@@ -15,8 +15,8 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
 // SHA-256 della password temporanea: pdrugby2026
 const PASS_HASH = "88dd01db53af6248b327211b46176db942c2d963f46beebfb9659b43f212ac95";
 const AUTH_KEY = "pdr_auth";
-const ASSET_VERSION = "0.8";
-const STOCK_STORAGE_KEY = "pdr_stock_v08";
+const ASSET_VERSION = "0.9";
+const STOCK_STORAGE_KEY = "pdr_stock_v09";
 const DEFAULT_CRITICAL_THRESHOLDS = {
   M001: 5, M002: 2, M003: 2, M004: 5,
   M005: 2, M006: 2, M007: 1, M008: 1, M009: 1,
@@ -49,6 +49,21 @@ function cname(id) {
   const found = DATA.containers.find(x => x.id === id);
   return found ? found.name : id;
 }
+function containerById(id) { return (DATA.containers || []).find(c => c.id === id) || null; }
+function containerPath(id) {
+  const path = []; let cur = containerById(id); const seen = new Set();
+  while (cur && !seen.has(cur.id)) { seen.add(cur.id); path.unshift(cur.name); cur = cur.parent ? containerById(cur.parent) : null; }
+  return path;
+}
+function containerPathLabel(id) { return containerPath(id).join(" → "); }
+function childrenOf(id) { return (DATA.containers || []).filter(c => c.parent === id); }
+function looseItemsFor(id) { return (DATA.looseItems || []).filter(x => x.container === id); }
+function materialTags(m) {
+  if (!m) return [];
+  const tags=[]; if (m.size) tags.push(m.size); if (m.variant) tags.push(m.variant);
+  if (m.condition && m.condition !== m.variant) tags.push(m.condition); return tags;
+}
+function materialLabel(m) { return m ? [m.name, ...materialTags(m)].filter(Boolean).join(" · ") : ""; }
 
 function stockIndex() {
   const byMaterial = Object.create(null);
@@ -83,7 +98,11 @@ function stockStatus(m, qty) {
 function loadStockState() {
   if (!checkDataIntegrity()) return;
   try {
-    const raw = localStorage.getItem(STOCK_STORAGE_KEY);
+    let raw = localStorage.getItem(STOCK_STORAGE_KEY);
+    if (!raw) {
+      const legacy = localStorage.getItem("pdr_stock_v08");
+      if (legacy) { raw = legacy; localStorage.setItem(STOCK_STORAGE_KEY, legacy); }
+    }
     if (!raw) return;
     const saved = JSON.parse(raw);
     if (!Array.isArray(saved)) return;
@@ -112,7 +131,7 @@ function saveStockState() {
 }
 function resetStockState() {
   if (!confirm("Ripristinare le quantità originali di data.js? Le modifiche locali andranno perse.")) return;
-  localStorage.removeItem(STOCK_STORAGE_KEY);
+  localStorage.removeItem(STOCK_STORAGE_KEY); localStorage.removeItem("pdr_stock_v08");
   location.reload();
 }
 function findStock(containerId, materialId) {
@@ -132,10 +151,6 @@ function changeStock(containerId, materialId, delta) {
 function addStock(containerId, materialId, qty) {
   const n = Math.max(1, parseInt(qty, 10) || 1);
   changeStock(containerId, materialId, n);
-}
-function materialLabel(m) {
-  if (!m) return "";
-  return [m.name, m.size, m.variant].filter(Boolean).join(" · ");
 }
 function updateStockIndicator() {
   const el = document.getElementById("stockStatus");
@@ -473,6 +488,16 @@ async function handleLogin(e) {
   }
 }
 
+function globalSearchResults() {
+  if (!query) return ""; const q=query.toLowerCase(), results=[]; const idx=stockIndex();
+  DATA.players.forEach(p=>{ if(playerSearchText(p).includes(q)) results.push({type:"Giocatore",title:`#${p.number} · ${p.name}`,sub:`${p.role} · ${p.wheels?.diameter||""} ${p.wheels?.cover||""}`,action:`player:${p.id}`}); });
+  DATA.wheels.forEach(w=>{ if([w.id,w.size,w.assignment,w.note].join(" ").toLowerCase().includes(q)) results.push({type:"Ruota",title:w.id,sub:[w.size,w.assignment,w.note].filter(Boolean).join(" · "),action:"wheels"}); });
+  DATA.materials.forEach(m=>{ if([materialLabel(m),m.category].join(" ").toLowerCase().includes(q)){ const loc=(idx.byMaterial[m.id]||[]).map(x=>`${containerPathLabel(x.container)} ×${x.qty}`).join(" · "); results.push({type:"Materiale",title:materialLabel(m),sub:loc||"Non presente nelle quantità censite",action:"inventory"}); }});
+  DATA.containers.forEach(c=>{ if([c.name,c.type,containerPathLabel(c.id)].join(" ").toLowerCase().includes(q)) results.push({type:"Contenitore",title:c.name,sub:containerPathLabel(c.id),action:"bags"}); });
+  (DATA.looseItems||[]).forEach(x=>{ if([x.label,containerPathLabel(x.container)].join(" ").toLowerCase().includes(q)) results.push({type:"Dotazione",title:x.label,sub:containerPathLabel(x.container),action:"bags"}); });
+  return `<div class="global-results"><div class="section-title"><b>Risultati ricerca</b><span>${results.length}</span></div>`+(results.length?results.slice(0,30).map(r=>`<button class="search-result" data-search-action="${esc(r.action)}"><small>${esc(r.type)}</small><b>${esc(r.title)}</b><span>${esc(r.sub)}</span></button>`).join(""):`<div class="empty-data">Nessun risultato.</div>`)+`</div>`;
+}
+
 // ------------------------------------------
 // Rendering
 // ------------------------------------------
@@ -500,54 +525,8 @@ function pageHead(kicker, title, desc) {
 }
 
 function playerCard(p) {
-  const contents = p.bag.contents.map(esc).join("<br>");
-  const roleClass = p.role === "Difesa" ? "defense" : "";
-
-  return `<article class="player-card" data-player="${esc(p.id)}">
-    <div class="player-top">
-      <div class="portrait">${photoBox(p.avatar, "Avatar " + p.name)}</div>
-      <div>
-        <span class="player-id">#${esc(p.number)}</span>
-        <div class="player-name">${esc(p.name)}</div>
-        <span class="role ${roleClass}">${esc((p.role || "").toUpperCase())}</span>
-      </div>
-      <span class="active-dot">● Attivo</span>
-    </div>
-
-    <div class="mini-block">
-      <div class="mini-title">CARROZZINA</div>
-      ${photoBox(p.wheelchair.photo, "Carrozzina " + p.name, "chair-photo")}
-      <div class="specs">
-        <div><span>Diametro ruote</span><b>${esc(p.wheels.diameter)}</b></div>
-        <div><span>Coperture</span><b>${esc(p.wheels.cover)}</b></div>
-        <div><span>Spillo</span><b>${esc(p.wheels.spoke)}</b></div>
-        <div><span>Corrimano</span><b>${esc(handrimLabel(p))}</b></div>
-      </div>
-    </div>
-
-    <div class="mini-block">
-      <div class="mini-title">RUOTE</div>
-      <div class="wheel-mini"><span>${esc(p.wheels.diameter)} · ${esc(p.wheels.cover)}</span><span class="wheel-dot"></span></div>
-    </div>
-
-    <div class="mini-block">
-      <div class="mini-title">ACCESSORI</div>
-      ${accessoriesHtml(p)}
-    </div>
-
-    <div class="mini-block">
-      <div class="mini-title">BORSA ${esc((p.bag.color || "").toUpperCase())}</div>
-      <div class="bag-mini">
-        ${photoBox(p.bag.photo, "Borsa " + p.bag.color, "bag-photo")}
-        <div><b>Contenuto</b><span>${contents}</span></div>
-      </div>
-    </div>
-
-    <div class="mini-block">
-      <div class="mini-title">NOTE</div>
-      <div class="note">${esc(p.notes || "—")}</div>
-    </div>
-  </article>`;
+  const roleClass=p.role==="Difesa"?"defense":"", shared=sharedPlayers(p), acc=accessoriesValues(p);
+  return `<article class="player-card" data-player="${esc(p.id)}"><div class="player-top"><div class="portrait small-portrait">${p.avatar?photoBox(p.avatar,"Avatar "+p.name):""}</div><div class="player-main"><span class="player-id">#${esc(p.number)}</span><div class="player-name">${esc(p.name)}</div><span class="role ${roleClass}">${esc((p.role||"").toUpperCase())}</span></div></div><div class="player-summary"><div class="mini-block compact"><div class="mini-title">RUOTE</div><div class="spec-line"><span>Configurazione</span><b>${esc(p.wheels.diameter||"—")} · ${esc(p.wheels.cover||"—")}</b></div><div class="spec-line"><span>Spillo</span><b>${esc(p.wheels.spoke||"—")}</b></div><div class="spec-line"><span>Corrimano</span><b>${esc(handrimLabel(p))}</b></div></div><div class="mini-block compact"><div class="mini-title">ACCESSORI</div>${acc.length?`<div class="children">${acc.slice(0,4).map(x=>`<span class="child">${esc(x)}</span>`).join("")}</div>`:'<div class="empty-data">Da completare</div>'}</div><div class="mini-block compact"><div class="mini-title">BORSA</div><div class="spec-line"><span>Tipo</span><b>${esc(p.bag?.color||"—")}</b></div><div class="spec-line"><span>Dotazione</span><b>${esc((p.bag?.contents||[]).length?p.bag.contents.join(" · "):"—")}</b></div></div></div><div class="player-footer"><span>${shared.length?`Condivide configurazione con ${shared.length} giocator${shared.length===1?"e":"i"}`:"Configurazione individuale"}</span><span class="open-hint">Apri scheda ›</span></div></article>`;
 }
 
 function sharedConfigs() {
@@ -570,27 +549,10 @@ function sharedConfigs() {
 // ------------------------------------------
 
 function dashboard() {
-  return pageHead(
-    "PD RUGBY · EQUIPMENT MANAGER",
-    "Dashboard",
-    "Gestione di giocatori, carrozzine, ruote, borse e materiale della squadra."
-  ) +
-  `<div class="stats">
-    <div class="stat-card"><small>GIOCATORI</small><div class="stat-value">${DATA.players.length}</div></div>
-    <div class="stat-card"><small>CARROZZINE</small><div class="stat-value">${DATA.players.length}</div></div>
-    <div class="stat-card"><small>RUOTE CENSITE</small><div class="stat-value">${DATA.wheels.length}</div></div>
-    <div class="stat-card"><small>CONTENITORI</small><div class="stat-value">${DATA.containers.length}</div></div>
-  </div>
-  <div class="section">
-    <h2 class="section-title">Giocatori <span>${DATA.players.length} attivi</span></h2>
-    <div class="player-grid">${DATA.players.map(playerCard).join("")}</div>
-  </div>
-  <div class="bottom-strip">
-    <div class="bottom-title">Configurazioni ruote<br>condivise</div>
-    ${sharedConfigs()}
-  </div>`;
+  const critical=[], idx=stockIndex(); DATA.materials.forEach(m=>{const total=totalStock(m.id,idx),status=stockStatus(m,total);if(status!=="ok")critical.push({m,total,status});});
+  const criticalHtml=critical.length?`<div class="critical-grid">${critical.map(x=>`<button class="critical-card" data-dashboard-action="inventory"><b>${esc(materialLabel(x.m))}</b><strong>${esc(x.total)}</strong><span>${x.status==="out"?"ESAURITO":`Soglia ${esc(criticalThreshold(x.m))}`}</span></button>`).join("")}</div>`:`<div class="ok-banner">✓ Nessun materiale sotto soglia critica</div>`;
+  return pageHead("PD RUGBY · EQUIPMENT MANAGER","Dashboard","Accesso rapido alla dotazione della squadra.")+`<div class="dashboard-stack"><section class="section dashboard-priority"><div class="section-title"><b>Situazione</b><span>${DATA.players.length} giocatori · ${DATA.wheels.length} ruote</span></div><div class="stats"><div class="stat-card"><small>GIOCATORI</small><div class="stat-value">${DATA.players.length}</div></div><div class="stat-card"><small>RUOTE CENSITE</small><div class="stat-value">${DATA.wheels.length}</div></div><div class="stat-card"><small>CONTENITORI</small><div class="stat-value">${DATA.containers.filter(c=>!c.parent).length}</div></div><div class="stat-card"><small>CRITICI</small><div class="stat-value">${critical.length}</div></div></div></section><section class="section"><h2 class="section-title"><b>Materiali critici</b><span>${critical.length}</span></h2>${criticalHtml}</section><section class="section"><h2 class="section-title"><b>Giocatori</b><span>${DATA.players.length}</span></h2><div class="player-grid">${DATA.players.map(playerCard).join("")}</div></section><section class="section"><h2 class="section-title"><b>Configurazioni ruote condivise</b></h2>${sharedConfigs()}</section></div>`;
 }
-
 function players() {
   const ps = DATA.players.filter(p => !query || playerSearchText(p).includes(query));
   return pageHead("SQUADRA", "Giocatori", "Schede e configurazioni delle attrezzature della squadra.") +
@@ -654,64 +616,11 @@ function addMaterialBox(c) {
   const options = DATA.materials.map(m => `<option value="${esc(m.id)}">${esc(materialLabel(m))}</option>`).join("");
   return `<div class="add-stock"><select data-add-material="${esc(c.id)}"><option value="">＋ Aggiungi materiale…</option>${options}</select><input type="number" min="1" value="1" data-add-qty="${esc(c.id)}" aria-label="Quantità"><button class="add-stock-btn" data-add-stock="${esc(c.id)}">Aggiungi</button></div>`;
 }
-function bags() {
-  const index = stockIndex();
-  const containersHtml = DATA.containers.map(c => {
-    const photo = c.photo ? photoBox(c.photo, c.name, "small-photo") : "";
-    const stockItems = index.byContainer[c.id] || [];
-    let itemsHtml = stockItems.map(s => stockEditorRow(c, s)).join("");
-    if (!itemsHtml) itemsHtml = '<span class="muted">Nessun contenuto quantitativo registrato.</span>';
-    return `<div class="card stock-card"><div class="section-title"><b>${esc(c.name)}</b><span>${esc(c.type)}</span></div>${photo}<div class="stock-list">${itemsHtml}</div>${addMaterialBox(c)}</div>`;
-  }).join("");
-  const personalBagsHtml = DATA.personalBags.map(p =>
-    `<div class="card personal-bag">${photoBox(p.photo, "Sacca " + p.color, "small-photo")}<b>Sacca ${esc(p.color)}</b><div>${esc(p.person)}</div></div>`
-  ).join("");
-  return pageHead("DOTAZIONE", "Borse", "Contenitori della squadra e dotazione personale.") +
-    `<div class="section stock-toolbar"><span><b>Modifica rapida quantità</b> · Le modifiche vengono salvate sul dispositivo.</span><button class="reset-stock" id="resetStockBtn">Ripristina dati iniziali</button></div>` +
-    `<div class="content-grid">${containersHtml}</div>
-     <div class="section"><h2 class="section-title">Sacche personali</h2><div class="content-grid">${personalBagsHtml}</div></div>`;
-}
-
-function inventory() {
-  const index = stockIndex();
-  const ms = DATA.materials.filter(m => !query || [m.name, m.category, m.size, m.variant].join(" ").toLowerCase().includes(query));
-  const rows = ms.map(m => {
-    const total = totalStock(m.id, index);
-    const status = stockStatus(m, total);
-    const pos = (index.byMaterial[m.id] || []).map(s => `${esc(cname(s.container))} ×${esc(s.qty)}`).join("<br>") || "—";
-    return `<tr class="${status === "critical" ? "stock-critical-row" : ""} ${status === "out" ? "stock-out-row" : ""}">
-      <td><b>${esc(m.name)} ${esc(m.size)}</b></td><td>${esc(m.category)}</td><td>${esc(m.variant)}</td>
-      <td class="qty"><strong>${esc(total)}</strong>${status === "critical" ? `<span class="stock-alert">CRITICO</span>` : status === "out" ? `<span class="stock-alert">ESAURITO</span>` : ""}</td><td>${pos}</td>
-    </tr>`;
-  }).join("");
-  return pageHead("MAGAZZINO", "Inventario", "Quantità aggregate e posizione del materiale.") +
-    `<div class="section stock-toolbar"><span>🔴 <b>Scorta critica</b> = quantità pari o inferiore alla soglia configurata.</span><button class="reset-stock" id="resetStockBtn">Ripristina dati iniziali</button></div>` +
-    `<div class="section"><div class="table-wrap"><table class="table"><thead><tr><th>Materiale</th><th>Categoria</th><th>Variante</th><th>Totale</th><th>Posizioni</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-}
-
-function map() {
-  const index = stockIndex();
-
-  const containersTree = DATA.containers.map(c => {
-    const items = (index.byContainer[c.id] || []).map(s => {
-      const m = mat(s.material);
-      if (!m) return "";
-      return `<span class="child">${esc(m.name)} ${esc(m.size)} ×${esc(s.qty)}</span>`;
-    }).join("");
-
-    return `<div class="node"><b>${esc(c.name)}</b><div class="children">${items}</div></div>`;
-  }).join("");
-
-  const playersTree = DATA.players.map(p =>
-    `<span class="child">#${esc(p.number)} ${esc(p.name)} · ${esc(p.wheels.diameter)}</span>`
-  ).join("");
-
-  return pageHead("STRUTTURA", "Mappa", "Vista concettuale di contenitori, materiali e dotazioni.") +
-    `<div class="section"><div class="tree">${containersTree}
-      <div class="node"><b>GIOCATORI</b><div class="children">${playersTree}</div></div>
-    </div></div>`;
-}
-
+function renderContainerCard(c,index,depth=0){const children=childrenOf(c.id),stockItems=index.byContainer[c.id]||[],loose=looseItemsFor(c.id),photo=c.photo?photoBox(c.photo,c.name,"small-photo"):"",stockHtml=stockItems.map(s=>stockEditorRow(c,s)).join(""),looseHtml=loose.map(x=>`<div class="loose-item"><span>${esc(x.label)}</span>${x.qty!=null?`<b>${esc(x.qty)}</b>`:""}</div>`).join(""),childHtml=children.map(ch=>renderContainerCard(ch,index,depth+1)).join("");return `<div class="card stock-card nested-container depth-${Math.min(depth,3)}"><div class="section-title"><b>${esc(c.name)}</b><span>${esc(c.type||"Contenitore")}</span></div>${depth===0?photo:""}${c.note?`<div class="container-note">${esc(c.note)}</div>`:""}${stockHtml?`<div class="stock-list">${stockHtml}</div>`:""}${looseHtml?`<div class="loose-list">${looseHtml}</div>`:""}${childHtml?`<div class="child-containers"><div class="nested-title">CONTENUTO</div>${childHtml}</div>`:""}${addMaterialBox(c)}</div>`;}
+function bags(){const index=stockIndex(),roots=DATA.containers.filter(c=>!c.parent),containersHtml=roots.map(c=>renderContainerCard(c,index)).join(""),personal=(DATA.personalBags||[]).map(p=>`<div class="card personal-bag"><b>Sacca ${esc(p.color)}</b><div>${esc(p.person)}</div></div>`).join("");return pageHead("DOTAZIONE","Borse e contenitori","Gestione gerarchica delle sacche, dei contenitori e del loro contenuto.")+`<div class="section stock-toolbar"><span><b>Modifica rapida quantità</b> · Le modifiche vengono salvate sul dispositivo.</span><button class="reset-stock" id="resetStockBtn">Ripristina dati iniziali</button></div><div class="content-grid">${containersHtml}</div><div class="section"><h2 class="section-title">Sacche personali <span>${(DATA.personalBags||[]).length}</span></h2><div class="content-grid">${personal}</div></div>`;}
+function inventory(){const index=stockIndex(),ms=DATA.materials.filter(m=>!query||[materialLabel(m),m.category].join(" ").toLowerCase().includes(query));const rows=ms.map(m=>{const total=totalStock(m.id,index),status=stockStatus(m,total),pos=(index.byMaterial[m.id]||[]).map(s=>`${esc(containerPathLabel(s.container))} ×${esc(s.qty)}`).join("<br>")||"—";return `<tr class="${status==="critical"?"stock-critical-row":""} ${status==="out"?"stock-out-row":""}"><td><b>${esc(m.name)}</b><small class="cell-sub">${esc(materialTags(m).join(" · "))}</small></td><td>${esc(m.category)}</td><td class="qty"><strong>${esc(total)}</strong>${status==="critical"?`<span class="stock-alert">CRITICO</span>`:status==="out"?`<span class="stock-alert">ESAURITO</span>`:""}</td><td>${pos}</td></tr>`;}).join("");return pageHead("MAGAZZINO","Inventario","Quantità aggregate e posizione del materiale.")+`<div class="section stock-toolbar"><span>🔴 <b>Scorta critica</b> = quantità pari o inferiore alla soglia configurata.</span><button class="reset-stock" id="resetStockBtn">Ripristina dati iniziali</button></div><div class="section"><div class="table-wrap"><table class="table"><thead><tr><th>Materiale</th><th>Categoria</th><th>Totale</th><th>Posizioni</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;}
+function mapNode(c,index){const items=(index.byContainer[c.id]||[]).map(s=>{const m=mat(s.material);return m?`<span class="child">${esc(materialLabel(m))} ×${esc(s.qty)}</span>`:"";}).join(""),loose=looseItemsFor(c.id).map(x=>`<span class="child">${esc(x.label)}${x.qty!=null?` ×${esc(x.qty)}`:""}</span>`).join(""),children=childrenOf(c.id).map(ch=>mapNode(ch,index)).join("");return `<div class="node"><b>${esc(c.name)}</b>${items||loose?`<div class="children">${items}${loose}</div>`:""}${children?`<div class="nested-map">${children}</div>`:""}</div>`;}
+function map(){const index=stockIndex(),roots=DATA.containers.filter(c=>!c.parent).map(c=>mapNode(c,index)).join(""),playersTree=DATA.players.map(p=>`<span class="child">#${esc(p.number)} ${esc(p.name)} · ${esc(p.wheels.diameter)}</span>`).join("");return pageHead("STRUTTURA","Mappa","Vista gerarchica di contenitori, materiali e dotazioni.")+`<div class="section"><div class="tree">${roots}<div class="node"><b>GIOCATORI</b><div class="children">${playersTree}</div></div></div></div>`;}
 function checklist() {
   const cRows = DATA.containers.map(c =>
     `<div class="readonly-row"><span class="fake-check"></span><b>${esc(c.name)}</b></div>`
@@ -740,7 +649,7 @@ function render() {
   else if (currentView === "data") html = dataManager();
 
   const content = $("#content");
-  if (content) content.innerHTML = html;
+  if (content) content.innerHTML = (query ? globalSearchResults() + html : html);
 
   document.querySelectorAll(".nav-item").forEach(b =>
     b.classList.toggle("active", b.dataset.view === currentView)
@@ -759,85 +668,7 @@ function nav(view) {
   document.body.classList.remove("mobile-nav-open");
 }
 
-function openPlayer(id) {
-  const p = DATA.players.find(x => x.id === id);
-  if (!p) return;
-
-  currentView = "players";
-  query = "";
-  const s = $("#search");
-  if (s) s.value = "";
-
-  const shared = sharedPlayers(p);
-  const sharedHtml = shared.length
-    ? shared.map(x => `<span class="child"><b>#${esc(x.number)}</b> ${esc(x.name)}</span>`).join("")
-    : '<span class="child">Nessun altro giocatore</span>';
-
-  const bagContents = p.bag.contents.map(x => `<div class="node">${esc(x)}</div>`).join("");
-  const roleClass = p.role === "Difesa" ? "defense" : "";
-
-  const content = $("#content");
-  if (!content) return;
-
-  content.innerHTML = pageHead(
-    "SCHEDA GIOCATORE",
-    `#${esc(p.number)} · ${esc(p.name)}`,
-    `${esc(p.role)} · dotazione personale`
-  ) +
-  `<div class="player-detail">
-    <div class="hero-player">
-      <span class="big-number">#${esc(p.number)}</span>
-      <span class="role ${roleClass}">${esc(p.role.toUpperCase())}</span>
-      ${photoBox(p.avatar, "Avatar " + p.name, "detail-avatar")}
-      <h2>${esc(p.name)}</h2>
-      <div class="hero-sub">Carrozzina · ${esc(p.wheelchair.model)}</div>
-    </div>
-
-    <div class="detail-panels">
-      <div class="detail-card">
-        <h3>CARROZZINA</h3>
-        ${photoBox(p.wheelchair.photo, "Carrozzina " + p.name, "detail-chair")}
-        <div class="kv"><div><small>Modello</small><b>${esc(p.wheelchair.model)}</b></div></div>
-      </div>
-
-      <div class="detail-card">
-        <h3>SPECIFICHE TECNICHE</h3>
-        <div class="kv">
-          <div><small>Diametro ruote</small><b>${esc(p.wheels.diameter)}</b></div>
-          <div><small>Coperture</small><b>${esc(p.wheels.cover)}</b></div>
-          <div><small>Lunghezza spillo</small><b>${esc(p.wheels.spoke)}</b></div>
-          <div><small>Corrimano</small><b>${esc(handrimLabel(p))}</b></div>
-        </div>
-      </div>
-
-      <div class="detail-card">
-        <h3>ACCESSORI</h3>
-        ${accessoriesHtml(p)}
-      </div>
-
-      <div class="detail-card">
-        <h3>COMPONENTI IN COMUNE</h3>
-        <div class="compatibility">Stessa combinazione diametro + coperture</div>
-        <div class="children">${sharedHtml}</div>
-      </div>
-
-      <div class="detail-card">
-        <h3>BORSA ${esc((p.bag.color || "").toUpperCase())}</h3>
-        ${photoBox(p.bag.photo, "Borsa " + p.bag.color, "detail-bag")}
-        ${bagContents}
-      </div>
-
-      <div class="detail-card">
-        <h3>ALTRI ACCESSORI / NOTE</h3>
-        <div class="note large-note">${esc(p.notes || "Da completare")}</div>
-      </div>
-    </div>
-  </div>`;
-
-  const logoutBtn = $("#logoutBtn");
-  if (logoutBtn) logoutBtn.addEventListener("click", logout);
-}
-
+function openPlayer(id){const p=DATA.players.find(x=>x.id===id);if(!p)return;currentView="players";query="";const searchEl=$("#search");if(searchEl)searchEl.value="";const shared=sharedPlayers(p),sharedHtml=shared.length?shared.map(x=>`<span class="child"><b>#${esc(x.number)}</b> ${esc(x.name)}</span>`).join(""):'<span class="child">Nessun altro giocatore</span>',bagContents=(p.bag?.contents||[]).map(x=>`<div class="node">${esc(x)}</div>`).join(""),roleClass=p.role==="Difesa"?"defense":"",content=$("#content");if(!content)return;content.innerHTML=pageHead("SCHEDA GIOCATORE",`#${esc(p.number)} · ${esc(p.name)}`,`${esc(p.role)} · dotazione personale`)+`<div class="player-detail v09-player-detail"><div class="hero-player compact-hero"><div class="player-identity"><span class="big-number">#${esc(p.number)}</span><div><h2>${esc(p.name)}</h2><span class="role ${roleClass}">${esc(p.role.toUpperCase())}</span></div></div>${p.avatar?photoBox(p.avatar,"Avatar "+p.name,"detail-avatar optional-photo"):""}<div class="hero-sub">Carrozzina · ${esc(p.wheelchair.model||"Da completare")}</div></div><div class="detail-panels"><div class="detail-card"><h3>RUOTE</h3><div class="kv"><div><small>Diametro</small><b>${esc(p.wheels.diameter||"—")}</b></div><div><small>Coperture</small><b>${esc(p.wheels.cover||"—")}</b></div><div><small>Spillo</small><b>${esc(p.wheels.spoke||"—")}</b></div><div><small>Corrimano</small><b>${esc(handrimLabel(p))}</b></div></div><div class="wheel-note">2 ruote in dotazione alla carrozzina</div></div><div class="detail-card"><h3>CARROZZINA</h3><div class="kv"><div><small>Modello</small><b>${esc(p.wheelchair.model||"—")}</b></div><div><small>Ruolo</small><b>${esc(p.role||"—")}</b></div></div>${p.wheelchair.photo?photoBox(p.wheelchair.photo,"Carrozzina "+p.name,"optional-chair-photo"):""}</div><div class="detail-card"><h3>ACCESSORI</h3>${accessoriesHtml(p)}</div><div class="detail-card"><h3>COMPONENTI IN COMUNE</h3><div class="compatibility">Configurazione compatibile: diametro + copertura</div><div class="children">${sharedHtml}</div></div><div class="detail-card"><h3>BORSA ${esc((p.bag?.color||"").toUpperCase())}</h3>${p.bag?.photo?photoBox(p.bag.photo,"Borsa "+p.bag.color,"detail-bag optional-bag-photo"):""}${bagContents||'<div class="empty-data">Nessun contenuto registrato.</div>'}</div><div class="detail-card"><h3>NOTE</h3><div class="note large-note">${esc(p.notes||"—")}</div></div></div></div>`;const logoutBtn=$("#logoutBtn");if(logoutBtn)logoutBtn.addEventListener("click",logout);}
 // ------------------------------------------
 // Avvio
 // ------------------------------------------
@@ -848,6 +679,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const contentEl = $("#content");
   if (contentEl) {
     contentEl.addEventListener("click", e => {
+      const searchBtn=e.target.closest("[data-search-action]");
+      if(searchBtn){e.stopPropagation();const action=searchBtn.dataset.searchAction||"";if(action.startsWith("player:"))openPlayer(action.slice(7));else nav(action);return;}
+      const dashBtn=e.target.closest("[data-dashboard-action]");
+      if(dashBtn){e.stopPropagation();nav(dashBtn.dataset.dashboardAction||"inventory");return;}
       const qtyBtn = e.target.closest("[data-stock-action]");
       if (qtyBtn) {
         e.stopPropagation();
